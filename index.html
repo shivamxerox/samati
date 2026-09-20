@@ -1118,11 +1118,8 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 <div id="toast" class="toast"></div>
 
 <script>
-// ==========================================
-// 🔴 গুরুত্বপূর্ণ: নিচে আপনার ফায়ারবেস ডেটাবেস লিঙ্ক দিন
-// উদাহরণ: "https://jerox-samiti-default-rtdb.firebaseio.com"
-// ==========================================
-const CLOUD_FIREBASE_URL = "YOUR_FIREBASE_DB_URL";
+// আপনার প্রদানকৃত অফিসিয়াল Firebase Database URL সরাসরি কনফিগার করা হলো
+const CLOUD_FIREBASE_URL = "https://shivamxerox-64a10-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
 const DB_KEY = "JEROX_SAMITI_HINDU_PORTAL_V2";
 const BACKUP_KEY = "JEROX_SAMITI_LOCAL_BACKUP_SNAPSHOT";
@@ -1143,7 +1140,7 @@ const defaultInitialState = {
         upiId: "",
         qrCodeImage: "",
         actionPassword: "123",
-        firebaseUrl: CLOUD_FIREBASE_URL !== "YOUR_FIREBASE_DB_URL" ? CLOUD_FIREBASE_URL : ""
+        firebaseUrl: CLOUD_FIREBASE_URL
     },
     members: [],
     payments: [],
@@ -1161,15 +1158,13 @@ if(!db.loans) db.loans = [];
 if(!db.expenses) db.expenses = [];
 if(!db.loanApplications) db.loanApplications = [];
 
-// ফায়ারবেস ইউআরএল ব্যাকফিল
-if(CLOUD_FIREBASE_URL !== "YOUR_FIREBASE_DB_URL" && (!db.settings.firebaseUrl || db.settings.firebaseUrl === "")){
-    db.settings.firebaseUrl = CLOUD_FIREBASE_URL;
-}
+// ফায়ারবেস URL আপডেট নিশ্চিতকরণ
+db.settings.firebaseUrl = CLOUD_FIREBASE_URL;
 
 let fbDb = null;
 
 function initFirebase(url){
-    if(!url || url === "YOUR_FIREBASE_DB_URL") return;
+    if(!url) return;
     try {
         if(!firebase.apps.length){
             firebase.initializeApp({ databaseURL: url });
@@ -1205,11 +1200,9 @@ function saveDB(){
 let loginType = "admin";
 let currentUser = null;
 
+// পেজ ওপেন হওয়ার সাথে সাথেই ক্লাউড থেকে লেটেস্ট ডেটা নামবে
 window.addEventListener("DOMContentLoaded", () => {
-    const targetUrl = (db.settings && db.settings.firebaseUrl) ? db.settings.firebaseUrl : (CLOUD_FIREBASE_URL !== "YOUR_FIREBASE_DB_URL" ? CLOUD_FIREBASE_URL : "");
-    if(targetUrl){
-        initFirebase(targetUrl);
-    }
+    initFirebase(CLOUD_FIREBASE_URL);
 });
 
 function setLoginType(type){
@@ -1262,7 +1255,7 @@ function login(e){
 
     if(!member){
         if(db.members.length === 0){
-            toast("⚠️ আপনার ডিভাইসে এখনো মেম্বার তালিকা লোড হয়নি! ক্লাউড ডেটাবেস চেক করুন।");
+            toast("⚠️ আপনার ডিভাইসে এখনো মেম্বার তালিকা লোড হয়নি! ক্লাউড সংযোগ চেক করুন।");
         } else {
             toast("সদস্য আইডি বা পাসওয়ার্ড সঠিক নয়!");
         }
