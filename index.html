@@ -1118,12 +1118,18 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 <div id="toast" class="toast"></div>
 
 <script>
+// ==========================================
+// 🔴 গুরুত্বপূর্ণ: নিচে আপনার ফায়ারবেস ডেটাবেস লিঙ্ক দিন
+// উদাহরণ: "https://jerox-samiti-default-rtdb.firebaseio.com"
+// ==========================================
+const CLOUD_FIREBASE_URL = "YOUR_FIREBASE_DB_URL";
+
 const DB_KEY = "JEROX_SAMITI_HINDU_PORTAL_V2";
 const BACKUP_KEY = "JEROX_SAMITI_LOCAL_BACKUP_SNAPSHOT";
 
 const defaultInitialState = {
     admin: {
-        name: "Shivam",
+        name: "Admin",
         username: "admin",
         password: "123",
         mobile: ""
@@ -1137,7 +1143,7 @@ const defaultInitialState = {
         upiId: "",
         qrCodeImage: "",
         actionPassword: "123",
-        firebaseUrl: ""
+        firebaseUrl: CLOUD_FIREBASE_URL !== "YOUR_FIREBASE_DB_URL" ? CLOUD_FIREBASE_URL : ""
     },
     members: [],
     payments: [],
@@ -1155,10 +1161,15 @@ if(!db.loans) db.loans = [];
 if(!db.expenses) db.expenses = [];
 if(!db.loanApplications) db.loanApplications = [];
 
+// ফায়ারবেস ইউআরএল ব্যাকফিল
+if(CLOUD_FIREBASE_URL !== "YOUR_FIREBASE_DB_URL" && (!db.settings.firebaseUrl || db.settings.firebaseUrl === "")){
+    db.settings.firebaseUrl = CLOUD_FIREBASE_URL;
+}
+
 let fbDb = null;
 
 function initFirebase(url){
-    if(!url) return;
+    if(!url || url === "YOUR_FIREBASE_DB_URL") return;
     try {
         if(!firebase.apps.length){
             firebase.initializeApp({ databaseURL: url });
@@ -1174,7 +1185,9 @@ function initFirebase(url){
                 if(!db.expenses) db.expenses = [];
                 if(!db.loanApplications) db.loanApplications = [];
                 localStorage.setItem(DB_KEY, JSON.stringify(db));
-                renderAll();
+                if(currentUser){
+                    renderAll();
+                }
             }
         });
     } catch(e){
@@ -1193,8 +1206,9 @@ let loginType = "admin";
 let currentUser = null;
 
 window.addEventListener("DOMContentLoaded", () => {
-    if(db.settings && db.settings.firebaseUrl){
-        initFirebase(db.settings.firebaseUrl);
+    const targetUrl = (db.settings && db.settings.firebaseUrl) ? db.settings.firebaseUrl : (CLOUD_FIREBASE_URL !== "YOUR_FIREBASE_DB_URL" ? CLOUD_FIREBASE_URL : "");
+    if(targetUrl){
+        initFirebase(targetUrl);
     }
 });
 
@@ -1213,7 +1227,7 @@ function setLoginType(type){
     }
 }
 
-/* লগইন ফাংশন (যেখানে admin এবং 123 পাসওয়ার্ড স্বয়ংক্রিয়ভাবে নিশ্চিত হবে) */
+/* লগইন ফাংশন */
 function login(e){
     e.preventDefault();
     const rawId = document.getElementById("loginId").value;
@@ -1223,20 +1237,18 @@ function login(e){
     const pass = (rawPass || "").trim();
 
     if(loginType === "admin"){
-        // '123' অথবা সংরক্ষিত পাসওয়ার্ডের যেকোনো একটি মিললেই নিশ্চিত লগইন
         const savedPass = (db.admin && db.admin.password) ? db.admin.password.trim() : "123";
-        if((id === "admin" || (db.admin && id === db.admin.username.trim().toLowerCase())) && (pass === "123" || pass === savedPass)){
+        const savedUser = (db.admin && db.admin.username) ? db.admin.username.trim().toLowerCase() : "admin";
+        
+        if((id === "admin" || id === savedUser) && (pass === "123" || pass === savedPass)){
             if(!db.admin){
-                db.admin = { name: "সঞ্জয় কুমার বর্মন", username: "admin", password: "123", mobile: "" };
-            } else {
-                db.admin.password = pass; // নিশ্চিত পাসওয়ার্ড আপডেট
+                db.admin = { name: "অ্যাডমিনিস্ট্রেটর", username: "admin", password: pass, mobile: "" };
             }
-            saveDB();
             currentUser = { id: "admin", name: db.admin.name || "অ্যাডমিনিস্ট্রেটর", role: "ADMIN" };
             startApp();
             return;
         }
-        toast("অ্যাডমিন আইডি অথবা পাসওয়ার্ড ভুল হয়েছে! (ডিফল্ট: admin / 123)");
+        toast("অ্যাডমিন আইডি অথবা পাসওয়ার্ড ভুল হয়েছে!");
         return;
     }
 
