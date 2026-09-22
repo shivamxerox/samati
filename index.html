@@ -174,6 +174,12 @@ input:focus,select:focus,textarea:focus{
     text-decoration:none;
 }
 
+.btn-sm{
+    padding:5px 9px;
+    font-size:12px;
+    border-radius:7px;
+}
+
 .btn-primary{ background:var(--primary); color:white; }
 .btn-primary:hover{ background:var(--primary-dark); }
 .btn-success{ background:#dcfce7; color:#166534; }
@@ -324,6 +330,23 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 .badge-warning{ background:#fef3c7; color:#92400e; }
 .badge-blue{ background:#ffedd5; color:#c2410c; }
 
+.due-summary-box{
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 15px;
+    font-size: 13px;
+}
+.due-summary-box div{
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+.due-summary-box div:last-child{
+    margin-bottom: 0;
+}
+
 .modal{
     position:fixed;
     inset:0;
@@ -471,7 +494,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
             <button onclick="showPage('members',this)">👥 মেম্বার খাতা ও পাসওয়ার্ড</button>
             <button onclick="showPage('pendingLoans',this)">📥 লোনের আবেদনসমূহ</button>
             <button onclick="showPage('loans',this)">🏦 লোন ব্যবস্থাপনা</button>
-            <button onclick="showPage('payments',this)">💰 সঞ্চয় জমা খাতা</button>
+            <button onclick="showPage('payments',this)">💰 সঞ্চয় ও লোন জমা খাতা</button>
             <button onclick="showPage('expenses',this)">💸 খরচ তালিকা</button>
             <button onclick="showPage('pending',this)">⏳ পেমেন্ট অ্যাপ্রুভাল</button>
             <button onclick="showPage('reports',this)">📈 বার্ষিক পূর্ণ হিসাব</button>
@@ -641,6 +664,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                                 <th>পরিমাণ</th>
                                 <th>মাধ্যম</th>
                                 <th>স্ট্যাটাস</th>
+                                <th>অ্যাকশন</th>
                             </tr>
                         </thead>
                         <tbody id="paymentsTable"></tbody>
@@ -744,13 +768,13 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                         </div>
                         <div class="form-group">
                             <label>সমিতির UPI ID (উদাঃ 9876543210@upi)</label>
-                            <input id="settingUpiId" placeholder="UPI ID দিন">
+                            <input id="settingUpiId" placeholder="UPI ID দিন" oninput="updateQrPreview()">
                         </div>
                         <div class="form-group">
-                            <label>পেমেন্ট কিউআর কোড ছবি URL</label>
+                            <label>অফলাইন কিউআর কোড ছবি লিংক (ঐচ্ছিক)</label>
                             <input id="settingQrLink" placeholder="কিউআর কোডের ছবির লিংক">
                             <div style="margin-top:6px;">
-                                <small>অথবা সরাসরি ছবি ফাইল বাছুন:</small>
+                                <small>অথবা ছবি ফাইল বাছুন:</small>
                                 <input type="file" id="settingQrFile" accept="image/*" onchange="uploadQrImage(event)">
                             </div>
                         </div>
@@ -766,10 +790,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                     </div>
 
                     <div class="card">
-                        <h3 style="margin-bottom:15px; color:#7c2d12;">🌐 ক্লাউড সিঙ্ক (Firebase Realtime Database)</h3>
-                        <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">
-                            অন্যান্য সদস্যের ফোনে ডেটা রিয়েলটাইমে সিঙ্ক করানোর জন্য নিচে আপনার Firebase Realtime Database URL দিন।
-                        </p>
+                        <h3 style="margin-bottom:15px; color:#7c2d12;">🌐 ক্লাউড সিঙ্ক ও ডেটাবেস রিসেট</h3>
                         <div class="form-group">
                             <label>Firebase Database URL</label>
                             <input id="settingFirebaseUrl" placeholder="https://your-app-default-rtdb.firebaseio.com">
@@ -778,13 +799,14 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 
                         <hr style="margin:20px 0; border:0; border-top:1px dashed var(--border);">
 
-                        <h4 style="color:#7c2d12; margin-bottom:10px;">💾 অফলাইন ব্যাকআপ ও রিস্টোর</h4>
+                        <h4 style="color:#7c2d12; margin-bottom:10px;">💾 ব্যাকআপ ও নতুন সূচনা</h4>
                         <div style="display:flex; flex-direction:column; gap:10px;">
                             <button class="btn btn-success full" onclick="createLocalSnapshot()">📥 লোকাল ব্যাকআপ নিন</button>
                             <button class="btn btn-warning full" onclick="requireActionAuth(restoreLocalSnapshot)">🔄 লোকাল ব্যাকআপ রিস্টোর</button>
                             <button class="btn btn-primary full" onclick="exportBackupFile()">📁 ব্যাকআপ JSON ডাউনলোড</button>
                             <label style="font-size:12px; font-weight:bold; margin-top:8px;">ফাইল থেকে রিস্টোর:</label>
                             <input type="file" id="restoreFileInput" accept=".json" onchange="importBackupFile(event)">
+                            <button class="btn btn-danger full" style="margin-top:10px;" onclick="requireActionAuth(resetAllTransactionsData)">🚨 সকল লেনদেনের হিসাব রিসেট করুন</button>
                         </div>
                     </div>
                 </div>
@@ -855,40 +877,55 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 
             <section id="memberPayment" class="page">
                 <div class="section-title">
-                    <h2>💳 পেমেন্ট করুন (কিউআর কোড ও অনলাইন জমা)</h2>
+                    <h2>💳 কিউআর কোড স্ক্যান করে সরাসরি পেমেন্ট</h2>
                 </div>
 
                 <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px;">
                     <div class="card qr-card">
-                        <h4 style="color:#7c2d12; margin-bottom:10px;">📲 সমিতির অফিসিয়াল কিউআর স্ক্যানার</h4>
+                        <h4 style="color:#7c2d12; margin-bottom:10px;">📲 অটোমেটিক কিউআর কোড</h4>
+                        <p style="color:var(--muted); font-size:13px; margin-bottom:10px;">
+                            টাকা এন্টার করতে হবে না, স্ক্যান করলেই সঠিক অ্যামাউন্ট চলে আসবে!
+                        </p>
                         <div id="qrDisplayArea">
-                            <p style="color:var(--muted); font-size:13px; margin-bottom:10px;">যেকোনো UPI অ্যাপ দিয়ে স্ক্যান করুন</p>
-                            <img id="portalQrImage" src="" alt="কিউআর কোড" style="display:none; margin:0 auto 10px;">
+                            <img id="portalQrImage" src="" alt="অটো কিউআর কোড" style="display:none; margin:0 auto 10px;">
                             <div id="noQrText" style="padding:20px; background:#fff7ed; border-radius:10px; color:#c2410c; font-size:13px;">
-                                অ্যাডমিন এখনো কোনো কিউআর কোড আপলোড করেননি।
+                                কিউআর কোড তৈরি হচ্ছে...
                             </div>
                         </div>
-                        <div style="margin-top:12px;">
-                            <b>UPI ID:</b> <span id="portalUpiIdText" style="color:var(--primary); font-weight:bold;">সেট করা নেই</span>
+                        <div style="margin-top:10px;">
+                            <b>নির্ধারিত টাকার পরিমাণ:</b> <span id="portalQrAmountText" style="color:var(--primary); font-size:18px; font-weight:bold;">₹0</span>
+                        </div>
+                        <div style="margin-top:4px;">
+                            <b>UPI ID:</b> <span id="portalUpiIdText" style="color:#431407; font-weight:bold;">সেট করা নেই</span>
                         </div>
                     </div>
 
                     <div class="card">
-                        <h4 style="margin-bottom:12px; color:#7c2d12;">📝 জমার স্লিপ সাবমিট করুন</h4>
+                        <h4 style="margin-bottom:12px; color:#7c2d12;">📝 পেমেন্ট অপশন বাছুন</h4>
+                        
+                        <!-- সদস্যের লাইভ বকেয়া তথ্য -->
+                        <div class="due-summary-box">
+                            <div><span>📌 সঞ্চয় বকেয়া (Savings Due):</span> <b id="mBoxSavingsDue" style="color:var(--danger)">₹0</b></div>
+                            <div><span>📌 লোনের বাকি আসল (Principal):</span> <b id="mBoxLoanPrincipal" style="color:var(--dark)">₹0</b></div>
+                            <div><span>📌 বকেয়া সুদ (Interest Due):</span> <b id="mBoxInterestDue" style="color:var(--warning)">₹0</b></div>
+                        </div>
+
                         <div class="form-group">
-                            <label>পেমেন্টের খাত</label>
-                            <select id="mPayType" onchange="toggleLoanField()">
-                                <option value="SAVINGS">মাসিক সঞ্চয় জমা</option>
-                                <option value="LOAN">লোনের আসল / সুদ পরিশোধ</option>
+                            <label>পেমেন্টের খাত সিলেক্ট করুন</label>
+                            <select id="mPayType" onchange="onMemberPaymentTypeChange()">
+                                <option value="SAVINGS">মাসিক সঞ্চয় জমা (অটোমেটিক ডিউ)</option>
+                                <option value="LOAN_INTEREST">লোনের সুদ পরিশোধ (অটোমেটিক সুদ ডিউ)</option>
+                                <option value="LOAN_PRINCIPAL">লোনের আসল পরিশোধ (ইচ্ছামতো পরিমাণ)</option>
                             </select>
                         </div>
                         <div id="loanSelectionDiv" class="form-group hidden">
                             <label>লোন অ্যাকাউন্ট সিলেক্ট করুন</label>
-                            <select id="mPayLoanSelect"></select>
+                            <select id="mPayLoanSelect" onchange="onMemberLoanSelectChange()"></select>
                         </div>
                         <div class="form-group">
-                            <label>প্রদত্ত টাকার পরিমাণ (₹)</label>
-                            <input id="mPayAmount" type="number" min="1" placeholder="টাকার পরিমাণ দিন">
+                            <label id="mPayAmountLabel">প্রদেয় টাকার পরিমাণ (₹)</label>
+                            <input id="mPayAmount" type="number" min="1" placeholder="টাকার পরিমাণ" oninput="updateMemberDynamicQr()">
+                            <small id="mPayAutoNotice" style="color:#16a34a; font-weight:bold; display:none;">✨ এই টাকার পরিমাণটি আপনার ডিউ অনুযায়ী স্বয়ংক্রিয়ভাবে নির্ধারণ করা হয়েছে।</small>
                         </div>
                         <div class="form-group">
                             <label>পেমেন্ট মেথড</label>
@@ -898,7 +935,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>ইউপিআই রেফারেন্স / UTR নম্বর (প্রযোজ্য ক্ষেত্রে)</label>
+                            <label>ইউপিআই রেফারেন্স / UTR নম্বর (পে করার পর দিন)</label>
                             <input id="mPayUtr" placeholder="১২ সংখ্যার UTR বা ট্রানজ্যাকশন আইডি">
                         </div>
                         <button class="btn btn-primary full" onclick="submitMemberPayment()">📤 পেমেন্টের তথ্য পাঠিয়ে দিন</button>
@@ -1083,26 +1120,39 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     </div>
 </div>
 
+<!-- ADMIN PAYMENT MODAL -->
 <div id="paymentModal" class="modal">
     <div class="modal-box">
         <div class="modal-head">
-            <h3>সরাসরি ক্যাশ/সঞ্চয় জমা</h3>
+            <h3>সরাসরি ক্যাশ/সঞ্চয় ও লোন জমা</h3>
             <button class="close-btn" onclick="closeModal('paymentModal')">✕</button>
         </div>
         <div class="form-group">
-            <label>মেম্বার</label>
-            <select id="payMemberSelect"></select>
+            <label>মেম্বার নির্বাচন করুন</label>
+            <select id="payMemberSelect" onchange="onAdminSelectPayMember()"></select>
         </div>
+
+        <div class="due-summary-box" id="adminMemberDueInfoBox">
+            <div><span>📌 সঞ্চয় বকেয়া:</span> <b id="admBoxSavingsDue" style="color:var(--danger)">₹0</b></div>
+            <div><span>📌 লোনের বাকি আসল:</span> <b id="admBoxLoanPrincipal" style="color:var(--dark)">₹0</b></div>
+            <div><span>📌 বকেয়া সুদ:</span> <b id="admBoxInterestDue" style="color:var(--warning)">₹0</b></div>
+        </div>
+
         <div class="form-group">
-            <label>খাত</label>
-            <select id="payTypeSelect">
-                <option value="SAVINGS">মাসিক সঞ্চয়</option>
-                <option value="LOAN">লোন রিপেমেন্ট</option>
+            <label>পেমেন্টের খাত বা ধরণ বাছুন</label>
+            <select id="payTypeSelect" onchange="toggleAdminLoanField()">
+                <option value="SAVINGS">মাসিক সঞ্চয় জমা</option>
+                <option value="LOAN_INTEREST">লোনের সুদ পরিশোধ (Interest Pay)</option>
+                <option value="LOAN_PRINCIPAL">লোনের আসল পরিশোধ (Loan Pay)</option>
             </select>
+        </div>
+        <div id="adminLoanSelectDiv" class="form-group hidden">
+            <label>লোন অ্যাকাউন্ট সিলেক্ট করুন</label>
+            <select id="adminPayLoanSelect" onchange="updateAdminLoanDueAmount()"></select>
         </div>
         <div class="form-group">
             <label>পরিমাণ (₹)</label>
-            <input id="payAmount" type="number" min="1">
+            <input id="payAmount" type="number" min="1" placeholder="টাকার পরিমাণ দিন">
         </div>
         <div class="form-group">
             <label>মাধ্যম</label>
@@ -1115,15 +1165,63 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     </div>
 </div>
 
+<!-- EDIT PAYMENT MODAL -->
+<div id="editPaymentModal" class="modal">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>✏️ পেমেন্ট এন্ট্রি সংশোধন করুন</h3>
+            <button class="close-btn" onclick="closeModal('editPaymentModal')">✕</button>
+        </div>
+        <input type="hidden" id="editPaymentId">
+        <div class="form-group">
+            <label>মেম্বার</label>
+            <select id="editPayMemberSelect" onchange="onEditPayMemberChanged()"></select>
+        </div>
+        <div class="form-group">
+            <label>পেমেন্টের খাত বা ধরণ</label>
+            <select id="editPayTypeSelect" onchange="toggleEditPaymentLoanField()">
+                <option value="SAVINGS">মাসিক সঞ্চয় জমা</option>
+                <option value="LOAN_INTEREST">লোনের সুদ পরিশোধ (Interest Pay)</option>
+                <option value="LOAN_PRINCIPAL">লোনের আসল পরিশোধ (Loan Pay)</option>
+            </select>
+        </div>
+        <div id="editPayLoanDiv" class="form-group hidden">
+            <label>লোন অ্যাকাউন্ট সিলেক্ট করুন</label>
+            <select id="editPayLoanSelect"></select>
+        </div>
+        <div class="form-group">
+            <label>পরিমাণ (₹)</label>
+            <input id="editPayAmount" type="number" min="1">
+        </div>
+        <div class="form-group">
+            <label>তারিখ</label>
+            <input id="editPayDate" type="date">
+        </div>
+        <div class="form-group">
+            <label>মাধ্যম</label>
+            <select id="editPayMethod">
+                <option value="Cash">Cash (নগদ)</option>
+                <option value="UPI">UPI / QR Code</option>
+                <option value="QR Code/UPI">QR Code/UPI</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>UTR নম্বর (প্রযোজ্য ক্ষেত্রে)</label>
+            <input id="editPayUtr" placeholder="UTR বা রেফারেন্স আইডি">
+        </div>
+        <button class="btn btn-primary full" onclick="saveEditedPayment()">সংরক্ষণ ও আপডেট করুন</button>
+    </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
-// আপনার প্রদানকৃত অফিসিয়াল Firebase Database URL সরাসরি কনফিগার করা হলো
 const CLOUD_FIREBASE_URL = "https://shivamxerox-64a10-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
 const DB_KEY = "JEROX_SAMITI_HINDU_PORTAL_V2";
 const BACKUP_KEY = "JEROX_SAMITI_LOCAL_BACKUP_SNAPSHOT";
 
+// আগের সমস্ত লেনদেন সম্পূর্ণ পরিষ্কার করে ফাঁকা প্রাথমিক অবস্থা
 const defaultInitialState = {
     admin: {
         name: "Admin",
@@ -1137,7 +1235,7 @@ const defaultInitialState = {
         monthlyDeposit: 1000,
         loanInterest: 3,
         adminMobile: "",
-        upiId: "",
+        upiId: "9876543210@upi",
         qrCodeImage: "",
         actionPassword: "123",
         firebaseUrl: CLOUD_FIREBASE_URL
@@ -1158,7 +1256,6 @@ if(!db.loans) db.loans = [];
 if(!db.expenses) db.expenses = [];
 if(!db.loanApplications) db.loanApplications = [];
 
-// ফায়ারবেস URL আপডেট নিশ্চিতকরণ
 db.settings.firebaseUrl = CLOUD_FIREBASE_URL;
 
 let fbDb = null;
@@ -1200,7 +1297,6 @@ function saveDB(){
 let loginType = "admin";
 let currentUser = null;
 
-// পেজ ওপেন হওয়ার সাথে সাথেই ক্লাউড থেকে লেটেস্ট ডেটা নামবে
 window.addEventListener("DOMContentLoaded", () => {
     initFirebase(CLOUD_FIREBASE_URL);
 });
@@ -1220,7 +1316,6 @@ function setLoginType(type){
     }
 }
 
-/* লগইন ফাংশন */
 function login(e){
     e.preventDefault();
     const rawId = document.getElementById("loginId").value;
@@ -1245,7 +1340,6 @@ function login(e){
         return;
     }
 
-    // মেম্বার চেক
     const member = db.members.find(m => {
         const mUser = (m.username || "").trim().toLowerCase();
         const mId = (m.id || "").trim().toLowerCase();
@@ -1300,7 +1394,7 @@ function showPage(id, btn){
         members: "👥 মেম্বার খাতা ও পাসওয়ার্ড",
         pendingLoans: "📥 লোনের আবেদনসমূহ",
         expenses: "💸 সমিতির খরচসমূহ",
-        payments: "💰 সঞ্চয় জমা খাতা",
+        payments: "💰 সঞ্চয় ও লোন জমা খাতা",
         loans: "🏦 লোন ব্যবস্থাপনা",
         pending: "⏳ পেমেন্ট অ্যাপ্রুভাল",
         reports: "📈 পূর্ণ খতিয়ান ও হিসাব",
@@ -1367,8 +1461,8 @@ function memberDueMonths(member){
 
 function loanPrincipalRemaining(loan){
     const paid = db.payments
-        .filter(p => p.loanId === loan.id && p.type === "LOAN" && p.status === "APPROVED")
-        .reduce((sum, p) => sum + Number(p.principalAmount || 0), 0);
+        .filter(p => p.loanId === loan.id && (p.type === "LOAN" || p.type === "LOAN_PRINCIPAL") && p.status === "APPROVED")
+        .reduce((sum, p) => sum + Number(p.principalAmount !== undefined ? p.principalAmount : p.amount), 0);
     return Math.max(0, loan.principal - paid);
 }
 
@@ -1389,9 +1483,16 @@ function loanInterestRemaining(loan){
     if(months <= 0) return 0;
     const rate = Number(loan.interestRate || db.settings.loanInterest);
     const totalAccrued = loan.principal * (rate / 100) * months;
+    
     const paidInterest = db.payments
-        .filter(p => p.loanId === loan.id && p.type === "LOAN" && p.status === "APPROVED")
-        .reduce((sum, p) => sum + Number(p.interestAmount || 0), 0);
+        .filter(p => p.loanId === loan.id && p.status === "APPROVED")
+        .reduce((sum, p) => {
+            if(p.type === "LOAN_INTEREST") {
+                return sum + Number(p.amount || 0);
+            }
+            return sum + Number(p.interestAmount || 0);
+        }, 0);
+
     return Math.max(0, totalAccrued - paidInterest);
 }
 
@@ -1401,7 +1502,7 @@ function totalSocietyCash(){
         .reduce((s, p) => s + Number(p.amount), 0);
 
     const totalLoanRepayments = db.payments
-        .filter(p => p.type === "LOAN" && p.status === "APPROVED")
+        .filter(p => (p.type === "LOAN" || p.type === "LOAN_PRINCIPAL" || p.type === "LOAN_INTEREST") && p.status === "APPROVED")
         .reduce((s, p) => s + Number(p.amount), 0);
 
     const totalLoanDisbursed = db.loans
@@ -1524,9 +1625,9 @@ function renderMembersTable(){
                 <td><b>${m.password}</b></td>
                 <td>
                     ${!m.isSettled ? `
-                        <button class="btn btn-secondary" onclick="requireActionAuth(()=>editMember('${m.id}'))">✏️</button>
-                        <button class="btn btn-warning" onclick="requireActionAuth(()=>promptResetPassword('${m.id}'))">🔑 পাসওয়ার্ড</button>
-                        <button class="btn btn-danger" onclick="requireActionAuth(()=>openSettleModal('${m.id}'))">🚪 হিসাব/বিদায়</button>
+                        <button class="btn btn-secondary btn-sm" onclick="requireActionAuth(()=>editMember('${m.id}'))">✏️</button>
+                        <button class="btn btn-warning btn-sm" onclick="requireActionAuth(()=>promptResetPassword('${m.id}'))">🔑 পাসওয়ার্ড</button>
+                        <button class="btn btn-danger btn-sm" onclick="requireActionAuth(()=>openSettleModal('${m.id}'))">🚪 বিদায়</button>
                     ` : 'হিসাব নিষ্পন্ন'}
                 </td>
             </tr>
@@ -1577,7 +1678,7 @@ function renderExpenseTable(){
                 <td><b>${e.title}</b></td>
                 <td style="color:var(--danger);font-weight:bold;">${money(e.amount)}</td>
                 <td>
-                    <button class="btn btn-danger" onclick="requireActionAuth(()=>deleteExpense('${e.id}'))">মুছুন</button>
+                    <button class="btn btn-danger btn-sm" onclick="requireActionAuth(()=>deleteExpense('${e.id}'))">মুছুন</button>
                 </td>
             </tr>
         `;
@@ -1617,23 +1718,39 @@ function renderLoansTable(){
     });
 }
 
+function formatPaymentType(type){
+    if(type === 'SAVINGS') return 'মাসিক সঞ্চয়';
+    if(type === 'LOAN_INTEREST') return 'লোনের সুদ পরিশোধ';
+    if(type === 'LOAN_PRINCIPAL' || type === 'LOAN') return 'লোনের আসল পরিশোধ';
+    return type;
+}
+
 function renderPaymentsTable(){
     const tbody = document.getElementById("paymentsTable");
     tbody.innerHTML = "";
 
     db.payments.slice().reverse().forEach(p => {
         const m = db.members.find(x => x.id === p.memberId);
+        const isSavings = p.type === 'SAVINGS';
         tbody.innerHTML += `
             <tr>
                 <td>${new Date(p.date).toLocaleDateString("bn-IN")}</td>
                 <td>${m ? m.name : '-'}</td>
-                <td><span class="badge ${p.type==='SAVINGS'?'badge-blue':'badge-warning'}">${p.type}</span></td>
+                <td><span class="badge ${isSavings?'badge-blue':'badge-warning'}">${formatPaymentType(p.type)}</span></td>
                 <td style="font-weight:bold;">${money(p.amount)}</td>
                 <td>${p.method || 'Cash'} ${p.utr ? `<br><small style="color:gray;">UTR: ${p.utr}</small>` : ''}</td>
                 <td><span class="badge ${p.status==='APPROVED'?'badge-success':p.status==='PENDING'?'badge-warning':'badge-danger'}">${p.status}</span></td>
+                <td>
+                    <button class="btn btn-secondary btn-sm" onclick="requireActionAuth(()=>openEditPaymentModal('${p.id}'))">✏️ এডিট</button>
+                    <button class="btn btn-danger btn-sm" onclick="requireActionAuth(()=>deletePayment('${p.id}'))">🗑️</button>
+                </td>
             </tr>
         `;
     });
+
+    if(db.payments.length === 0){
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;">কোনো পেমেন্ট রেকর্ড নেই</td></tr>`;
+    }
 }
 
 function renderPendingTable(){
@@ -1647,7 +1764,7 @@ function renderPendingTable(){
             <tr>
                 <td>${new Date(p.date).toLocaleDateString("bn-IN")}</td>
                 <td><b>${m ? m.name : '-'}</b></td>
-                <td>${p.type}</td>
+                <td><span class="badge badge-warning">${formatPaymentType(p.type)}</span></td>
                 <td style="font-weight:bold; color:#166534;">${money(p.amount)}</td>
                 <td>${p.method} ${p.utr ? `<br><b>UTR:</b> ${p.utr}` : ''}</td>
                 <td>
@@ -1725,23 +1842,122 @@ function renderMemberDashboard(){
         <p>মাসিক সঞ্চয় লক্ষ্যমাত্রা: <b>${money(db.settings.monthlyDeposit)}</b> প্রতি মাস</p>
         <p>মোট বকেয়া মাস: <b style="color:${dueMonths>0?'var(--danger)':'inherit'}">${dueMonths} মাস</b></p>
     `;
+
+    document.getElementById("mBoxSavingsDue").textContent = money(due);
+    document.getElementById("mBoxLoanPrincipal").textContent = money(pRemaining);
+    document.getElementById("mBoxInterestDue").textContent = money(iRemaining);
 }
 
+/* ================= DYNAMIC QR CODE LOGIC ================= */
 function renderMemberPaymentPortal(){
+    document.getElementById("portalUpiIdText").textContent = db.settings.upiId || "সেট করা নেই";
+    onMemberPaymentTypeChange();
+}
+
+function onMemberPaymentTypeChange(){
+    const m = db.members.find(x => x.id === currentUser.id);
+    if(!m) return;
+
+    const type = document.getElementById("mPayType").value;
+    const loanDiv = document.getElementById("loanSelectionDiv");
+    const amountInput = document.getElementById("mPayAmount");
+    const autoNotice = document.getElementById("mPayAutoNotice");
+
+    const loans = db.loans.filter(l => l.memberId === currentUser.id && l.status === "APPROVED");
+    const select = document.getElementById("mPayLoanSelect");
+    select.innerHTML = "";
+
+    if(type === "SAVINGS"){
+        loanDiv.classList.add("hidden");
+        const due = memberSavingsDue(m);
+        amountInput.value = due > 0 ? due : (db.settings.monthlyDeposit || 1000);
+        amountInput.readOnly = true;
+        autoNotice.style.display = "block";
+        autoNotice.textContent = "✨ আপনার বকেয়া সঞ্চয় অনুযায়ী টাকার পরিমাণ স্বয়ংক্রিয়ভাবে নির্ধারণ করা হয়েছে।";
+    } else if(type === "LOAN_INTEREST"){
+        loanDiv.classList.remove("hidden");
+        if(loans.length === 0){
+            select.innerHTML = `<option value="">কোনো লোন সক্রিয় নেই</option>`;
+            amountInput.value = 0;
+            amountInput.readOnly = true;
+        } else {
+            loans.forEach(l => {
+                select.innerHTML += `<option value="${l.id}">Loan ${l.id} [বাকি সুদ: ${money(loanInterestRemaining(l))}]</option>`;
+            });
+            const selLoan = loans[0];
+            const intDue = loanInterestRemaining(selLoan);
+            amountInput.value = intDue;
+            amountInput.readOnly = true;
+        }
+        autoNotice.style.display = "block";
+        autoNotice.textContent = "✨ আপনার লোনের বকেয়া সুদ অনুযায়ী টাকার পরিমাণ স্বয়ংক্রিয়ভাবে নির্ধারণ করা হয়েছে।";
+    } else if(type === "LOAN_PRINCIPAL"){
+        loanDiv.classList.remove("hidden");
+        if(loans.length === 0){
+            select.innerHTML = `<option value="">কোনো লোন সক্রিয় নেই</option>`;
+            amountInput.value = 0;
+        } else {
+            loans.forEach(l => {
+                select.innerHTML += `<option value="${l.id}">Loan ${l.id} [বাকি আসল: ${money(loanPrincipalRemaining(l))}]</option>`;
+            });
+            amountInput.value = "";
+        }
+        amountInput.readOnly = false;
+        amountInput.placeholder = "যত টাকা আসল পরিশোধ করতে চান লিখুন";
+        autoNotice.style.display = "none";
+    }
+
+    updateMemberDynamicQr();
+}
+
+function onMemberLoanSelectChange(){
+    const type = document.getElementById("mPayType").value;
+    const loanId = document.getElementById("mPayLoanSelect").value;
+    const loan = db.loans.find(l => l.id === loanId);
+    const amountInput = document.getElementById("mPayAmount");
+
+    if(loan && type === "LOAN_INTEREST"){
+        amountInput.value = loanInterestRemaining(loan);
+    }
+    updateMemberDynamicQr();
+}
+
+function updateMemberDynamicQr(){
+    const amount = Number(document.getElementById("mPayAmount").value) || 0;
+    const upiId = (db.settings.upiId || "").trim();
     const qrImg = document.getElementById("portalQrImage");
     const noQr = document.getElementById("noQrText");
-    const upiText = document.getElementById("portalUpiIdText");
+    const amountText = document.getElementById("portalQrAmountText");
 
-    if(db.settings.qrCodeImage){
-        qrImg.src = db.settings.qrCodeImage;
+    amountText.textContent = money(amount);
+
+    if(!upiId){
+        qrImg.style.display = "none";
+        noQr.style.display = "block";
+        noQr.textContent = "অ্যাডমিন এখনও UPI ID কনফিগার করেননি।";
+        return;
+    }
+
+    if(amount > 0){
+        const note = encodeURIComponent(`Jerox Samiti - ${currentUser ? currentUser.name : 'Member'}`);
+        const upiPayUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent("Jerox Samiti")}&am=${amount}&cu=INR&tn=${note}`;
+        const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiPayUrl)}`;
+
+        qrImg.src = qrApi;
         qrImg.style.display = "block";
         noQr.style.display = "none";
     } else {
-        qrImg.style.display = "none";
-        noQr.style.display = "block";
+        if(db.settings.qrCodeImage){
+            qrImg.src = db.settings.qrCodeImage;
+            qrImg.style.display = "block";
+            noQr.style.display = "none";
+        } else {
+            const genericUpi = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent("Jerox Samiti")}&cu=INR`;
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(genericUpi)}`;
+            qrImg.style.display = "block";
+            noQr.style.display = "none";
+        }
     }
-
-    upiText.textContent = db.settings.upiId || "সেট করা নেই";
 }
 
 function renderAllMemberDues(){
@@ -1776,7 +1992,7 @@ function renderMemberHistory(){
         tbody.innerHTML += `
             <tr>
                 <td>${new Date(p.date).toLocaleDateString("bn-IN")}</td>
-                <td>${p.type === 'SAVINGS' ? 'মাসিক সঞ্চয়' : 'লোন কিস্তি / সুদ'}</td>
+                <td>${formatPaymentType(p.type)}</td>
                 <td style="font-weight:bold;">${money(p.amount)}</td>
                 <td>${p.method || 'Cash'} ${p.utr ? `<br><small>UTR: ${p.utr}</small>` : ''}</td>
                 <td><span class="badge ${p.status==='APPROVED'?'badge-success':p.status==='PENDING'?'badge-warning':'badge-danger'}">${p.status}</span></td>
@@ -1911,7 +2127,7 @@ function adminConfirmMemberPasswordReset(){
     }
 }
 
-/* ================= MEMBER MANAGEMENT ================= */
+/* ================= MEMBER MANAGEMENT (২০,০০০ এন্ট্রি সহ) ================= */
 function openMemberModal(){
     document.getElementById("editMemberId").value = "";
     document.getElementById("mName").value = "";
@@ -1973,17 +2189,20 @@ function saveMember(e){
             isSettled: false 
         });
 
+        // প্রথম তারিখে স্বয়ংক্রিয়ভাবে ২০,০০০ টাকা প্রারম্ভিক শেয়ার জমা এন্ট্রি
         db.payments.push({
             id: "PAY-ENTRY-" + Date.now(),
             memberId: id,
             type: "SAVINGS",
             amount: entryDeposit,
+            principalAmount: 0,
+            interestAmount: 0,
             method: "Cash",
             status: "APPROVED",
             date: new Date(joiningDate).toISOString()
         });
 
-        toast("নতুন মেম্বার যুক্ত হয়েছে!");
+        toast("নতুন মেম্বার যুক্ত হয়েছে এবং প্রারম্ভিক ₹20,000 জমা হয়েছে!");
     }
 
     saveDB();
@@ -2001,8 +2220,8 @@ function openSettleModal(id){
     const combinedTotalSavings = activeMembers.reduce((sum, x) => sum + memberSavings(x.id), 0);
 
     const totalInterestCollected = db.payments
-        .filter(p => p.type === "LOAN" && p.status === "APPROVED")
-        .reduce((sum, p) => sum + Number(p.interestAmount || 0), 0);
+        .filter(p => (p.type === "LOAN_INTEREST" || p.type === "LOAN") && p.status === "APPROVED")
+        .reduce((sum, p) => sum + Number(p.type === "LOAN_INTEREST" ? p.amount : (p.interestAmount || 0)), 0);
 
     const totalExpenses = db.expenses.reduce((sum, e) => sum + Number(e.amount), 0);
     const netProfitPool = totalInterestCollected - totalExpenses;
@@ -2145,14 +2364,74 @@ function saveLoan(){
     toast("লোন বিতরণ সফল হয়েছে!");
 }
 
-/* ================= PAYMENTS ================= */
+/* ================= PAYMENTS & EDIT FUNCTIONALITY ================= */
 function openPaymentModal(){
     const select = document.getElementById("payMemberSelect");
     select.innerHTML = "";
-    db.members.filter(m => !m.isSettled).forEach(m => {
-        select.innerHTML += `<option value="${m.id}">${m.name}</option>`;
+    const activeMembers = db.members.filter(m => !m.isSettled);
+    activeMembers.forEach(m => {
+        select.innerHTML += `<option value="${m.id}">${m.name} (${m.id})</option>`;
     });
+    document.getElementById("payAmount").value = "";
+    onAdminSelectPayMember();
     document.getElementById("paymentModal").classList.add("show");
+}
+
+function onAdminSelectPayMember(){
+    const memberId = document.getElementById("payMemberSelect").value;
+    const m = db.members.find(x => x.id === memberId);
+    if(!m) return;
+
+    const due = memberSavingsDue(m);
+    const memberLoans = db.loans.filter(l => l.memberId === m.id && l.status === "APPROVED");
+    const pRemaining = memberLoans.reduce((s, l) => s + loanPrincipalRemaining(l), 0);
+    const iRemaining = memberLoans.reduce((s, l) => s + loanInterestRemaining(l), 0);
+
+    document.getElementById("admBoxSavingsDue").textContent = money(due);
+    document.getElementById("admBoxLoanPrincipal").textContent = money(pRemaining);
+    document.getElementById("admBoxInterestDue").textContent = money(iRemaining);
+
+    toggleAdminLoanField();
+}
+
+function toggleAdminLoanField(){
+    const type = document.getElementById("payTypeSelect").value;
+    const div = document.getElementById("adminLoanSelectDiv");
+    const memberId = document.getElementById("payMemberSelect").value;
+
+    if(type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL"){
+        div.classList.remove("hidden");
+        const select = document.getElementById("adminPayLoanSelect");
+        select.innerHTML = "";
+        const loans = db.loans.filter(l => l.memberId === memberId && l.status === "APPROVED");
+        if(loans.length === 0){
+            select.innerHTML = `<option value="">কোনো সক্রিয় লোন নেই</option>`;
+        } else {
+            loans.forEach(l => {
+                select.innerHTML += `<option value="${l.id}">Loan ${l.id} [বাকি আসল: ${money(loanPrincipalRemaining(l))}, বাকি সুদ: ${money(loanInterestRemaining(l))}]</option>`;
+            });
+        }
+    } else {
+        div.classList.add("hidden");
+    }
+    updateAdminLoanDueAmount();
+}
+
+function updateAdminLoanDueAmount(){
+    const type = document.getElementById("payTypeSelect").value;
+    const memberId = document.getElementById("payMemberSelect").value;
+    const m = db.members.find(x => x.id === memberId);
+    if(!m) return;
+
+    if(type === "SAVINGS"){
+        document.getElementById("payAmount").value = memberSavingsDue(m);
+    } else if(type === "LOAN_INTEREST"){
+        const loanId = document.getElementById("adminPayLoanSelect").value;
+        const loan = db.loans.find(l => l.id === loanId);
+        if(loan){
+            document.getElementById("payAmount").value = loanInterestRemaining(loan);
+        }
+    }
 }
 
 function saveAdminPayment(){
@@ -2160,16 +2439,26 @@ function saveAdminPayment(){
     const type = document.getElementById("payTypeSelect").value;
     const amount = Number(document.getElementById("payAmount").value);
     const method = document.getElementById("payMethod").value;
+    const loanId = (type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL") ? document.getElementById("adminPayLoanSelect").value : null;
 
-    if(!amount || amount <= 0) return;
+    if(!amount || amount <= 0) {
+        toast("সঠিক টাকার পরিমাণ দিন!");
+        return;
+    }
+
+    if((type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL") && !loanId){
+        toast("সদস্যের কোনো সক্রিয় লোন অ্যাকাউন্ট নেই!");
+        return;
+    }
 
     db.payments.push({
         id: "PAY-" + Date.now(),
         memberId,
         type,
+        loanId,
         amount,
-        principalAmount: type === "LOAN" ? amount : 0,
-        interestAmount: 0,
+        principalAmount: type === "LOAN_PRINCIPAL" ? amount : 0,
+        interestAmount: type === "LOAN_INTEREST" ? amount : 0,
         method,
         status: "APPROVED",
         date: new Date().toISOString()
@@ -2178,34 +2467,122 @@ function saveAdminPayment(){
     saveDB();
     closeModal("paymentModal");
     renderAll();
-    toast("পেমেন্ট সফলভাবে জমা হয়েছে!");
+    toast("পেমেন্ট সফলভাবে জমা ও মাইনাস হয়েছে!");
 }
 
-function toggleLoanField(){
-    const type = document.getElementById("mPayType").value;
-    const loanDiv = document.getElementById("loanSelectionDiv");
-    if(type === "LOAN"){
-        loanDiv.classList.remove("hidden");
-        const select = document.getElementById("mPayLoanSelect");
+/* --- পেমেন্ট এডিট ও ডিলিট অপশন --- */
+function openEditPaymentModal(paymentId){
+    const p = db.payments.find(x => x.id === paymentId);
+    if(!p) return;
+
+    document.getElementById("editPaymentId").value = p.id;
+    
+    const mSelect = document.getElementById("editPayMemberSelect");
+    mSelect.innerHTML = "";
+    db.members.forEach(m => {
+        mSelect.innerHTML += `<option value="${m.id}" ${m.id === p.memberId ? 'selected' : ''}>${m.name} (${m.id})</option>`;
+    });
+
+    let selectedType = p.type;
+    if(selectedType === 'LOAN') selectedType = 'LOAN_PRINCIPAL';
+    document.getElementById("editPayTypeSelect").value = selectedType;
+    document.getElementById("editPayAmount").value = p.amount;
+    document.getElementById("editPayDate").value = (p.date ? new Date(p.date) : new Date()).toISOString().slice(0, 10);
+    document.getElementById("editPayMethod").value = p.method || "Cash";
+    document.getElementById("editPayUtr").value = p.utr || "";
+
+    toggleEditPaymentLoanField(p.loanId);
+
+    document.getElementById("editPaymentModal").classList.add("show");
+}
+
+function onEditPayMemberChanged(){
+    toggleEditPaymentLoanField();
+}
+
+function toggleEditPaymentLoanField(preferredLoanId){
+    const type = document.getElementById("editPayTypeSelect").value;
+    const div = document.getElementById("editPayLoanDiv");
+    const memberId = document.getElementById("editPayMemberSelect").value;
+
+    if(type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL"){
+        div.classList.remove("hidden");
+        const select = document.getElementById("editPayLoanSelect");
         select.innerHTML = "";
-        const loans = db.loans.filter(l => l.memberId === currentUser.id && l.status === "APPROVED");
-        loans.forEach(l => {
-            select.innerHTML += `<option value="${l.id}">Loan ${l.id} (বাকি আসল: ${money(loanPrincipalRemaining(l))})</option>`;
-        });
+        const loans = db.loans.filter(l => l.memberId === memberId && l.status === "APPROVED");
+        if(loans.length === 0){
+            select.innerHTML = `<option value="">কোনো লোন অ্যাকাউন্ট নেই</option>`;
+        } else {
+            loans.forEach(l => {
+                const isSel = preferredLoanId && preferredLoanId === l.id;
+                select.innerHTML += `<option value="${l.id}" ${isSel ? 'selected' : ''}>Loan ${l.id}</option>`;
+            });
+        }
     } else {
-        loanDiv.classList.add("hidden");
+        div.classList.add("hidden");
     }
 }
 
+function saveEditedPayment(){
+    const paymentId = document.getElementById("editPaymentId").value;
+    const p = db.payments.find(x => x.id === paymentId);
+    if(!p) return;
+
+    const memberId = document.getElementById("editPayMemberSelect").value;
+    const type = document.getElementById("editPayTypeSelect").value;
+    const amount = Number(document.getElementById("editPayAmount").value);
+    const dateStr = document.getElementById("editPayDate").value;
+    const method = document.getElementById("editPayMethod").value;
+    const utr = document.getElementById("editPayUtr").value.trim();
+    const loanId = (type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL") ? document.getElementById("editPayLoanSelect").value : null;
+
+    if(!amount || amount <= 0){
+        toast("সঠিক টাকার পরিমাণ দিন");
+        return;
+    }
+
+    p.memberId = memberId;
+    p.type = type;
+    p.loanId = loanId;
+    p.amount = amount;
+    p.principalAmount = type === "LOAN_PRINCIPAL" ? amount : 0;
+    p.interestAmount = type === "LOAN_INTEREST" ? amount : 0;
+    p.method = method;
+    p.utr = utr;
+    if(dateStr){
+        p.date = new Date(dateStr).toISOString();
+    }
+
+    saveDB();
+    closeModal("editPaymentModal");
+    renderAll();
+    toast("পেমেন্টের তথ্য সফলভাবে সংশোধন করা হয়েছে!");
+}
+
+function deletePayment(paymentId){
+    if(confirm("আপনি কি নিশ্চিত এই পেমেন্ট এন্ট্রিটি মুছে ফেলতে চান?")){
+        db.payments = db.payments.filter(p => p.id !== paymentId);
+        saveDB();
+        renderAll();
+        toast("পেমেন্ট মুছে ফেলা হয়েছে এবং হিসাব সমন্বয় করা হয়েছে।");
+    }
+}
+
+/* ================= MEMBER PORTAL PAYMENT SUBMIT ================= */
 function submitMemberPayment(){
     const type = document.getElementById("mPayType").value;
     const amount = Number(document.getElementById("mPayAmount").value);
     const method = document.getElementById("mPayMethod").value;
     const utr = document.getElementById("mPayUtr").value.trim();
-    const loanId = type === "LOAN" ? document.getElementById("mPayLoanSelect").value : null;
+    const loanId = (type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL") ? document.getElementById("mPayLoanSelect").value : null;
 
     if(!amount || amount <= 0){
-        toast("টাকার সঠিক পরিমাণ লিখুন");
+        toast("টাকার সঠিক পরিমাণ লিখুন বা সিলেক্ট করুন");
+        return;
+    }
+
+    if((type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL") && !loanId){
+        toast("কোনো সক্রিয় লোন অ্যাকাউন্ট পাওয়া যায়নি!");
         return;
     }
 
@@ -2215,8 +2592,8 @@ function submitMemberPayment(){
         type,
         loanId,
         amount,
-        principalAmount: type === "LOAN" ? amount : 0,
-        interestAmount: 0,
+        principalAmount: type === "LOAN_PRINCIPAL" ? amount : 0,
+        interestAmount: type === "LOAN_INTEREST" ? amount : 0,
         method,
         utr,
         status: "PENDING",
@@ -2224,9 +2601,8 @@ function submitMemberPayment(){
     });
 
     saveDB();
-    document.getElementById("mPayAmount").value = "";
     document.getElementById("mPayUtr").value = "";
-    toast("পেমেন্ট সাবমিট করা হয়েছে!");
+    toast("পেমেন্ট সাবমিট করা হয়েছে! অ্যাডমিন অনুমোদন করলেই ডিউ কমে যাবে।");
     renderAll();
 }
 
@@ -2236,7 +2612,7 @@ function approvePayment(id){
         p.status = "APPROVED";
         saveDB();
         renderAll();
-        toast("পেমেন্ট অনুমোদন সফল!");
+        toast("পেমেন্ট অনুমোদন সফল! সংশ্লিষ্ট ডিউ ও সুদ আপডেট হয়েছে।");
     }
 }
 
@@ -2309,6 +2685,35 @@ function connectFirebaseDb(){
     if(fbDb){
         fbDb.ref("samiti_db").set(db);
         toast("Firebase ক্লাউড সফলভাবে কানেক্ট ও সিঙ্ক হয়েছে!");
+    }
+}
+
+// সকল লেনদেন ও ঋণ মুছে ফেলার ডেডিকেটেড ফাংশন
+function resetAllTransactionsData(){
+    if(confirm("⚠️ আপনি কি নিশ্চিত যে সমস্ত লোন, পেমেন্ট ও খরচের হিসাব মুছে সম্পূর্ণ নতুন করে শুরু করতে চান?")){
+        db.payments = [];
+        db.loans = [];
+        db.expenses = [];
+        db.loanApplications = [];
+
+        // সদস্যদের ২০,০০০ প্রারম্ভিক শেয়ার পুনরায় এন্ট্রি
+        db.members.forEach(m => {
+            db.payments.push({
+                id: "PAY-ENTRY-" + Date.now() + "-" + m.id,
+                memberId: m.id,
+                type: "SAVINGS",
+                amount: Number(m.entryDeposit || 20000),
+                principalAmount: 0,
+                interestAmount: 0,
+                method: "Cash",
+                status: "APPROVED",
+                date: new Date(m.joiningDate || db.settings.samitiStartDate || "2025-07-05").toISOString()
+            });
+        });
+
+        saveDB();
+        renderAll();
+        toast("সমস্ত লেনদেন সফলভাবে রিসেট করা হয়েছে এবং প্রারম্ভিক ₹20,000 ধার্য করা হয়েছে!");
     }
 }
 
