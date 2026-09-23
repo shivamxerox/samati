@@ -512,6 +512,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     font-size:13px;
     line-height:1.4;
     word-break:break-word;
+    position:relative;
 }
 .chat-msg.me{
     align-self:flex-end;
@@ -536,6 +537,17 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     opacity:0.75;
     margin-top:4px;
     text-align:right;
+}
+.chat-del-btn{
+    cursor:pointer;
+    background:transparent;
+    border:0;
+    color:#fca5a5;
+    font-size:12px;
+    margin-left:6px;
+}
+.chat-del-btn:hover{
+    color:#ef4444;
 }
 .chat-input-bar{
     padding:12px;
@@ -725,7 +737,10 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
             <section id="chatPage" class="page">
                 <div class="section-title">
                     <h2>💬 চ্যাট সিস্টেম ও ফ্ল্যাশ মেসেজ</h2>
-                    <button class="btn btn-warning" onclick="openFlashModal()">⚡ নতুন ফ্ল্যাশ মেসেজ পাঠান</button>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-secondary" onclick="testSoundAlert()">🔊 টেস্ট সাউন্ড</button>
+                        <button class="btn btn-warning" onclick="openFlashModal()">⚡ নতুন ফ্ল্যাশ নোটিশ পাঠান</button>
+                    </div>
                 </div>
 
                 <div class="chat-container">
@@ -1464,7 +1479,7 @@ db.settings.firebaseUrl = CLOUD_FIREBASE_URL;
 let fbDb = null;
 let activeChatChannel = "GROUP"; // 'GROUP' or memberId
 
-/* SOUND SYNTHESIZER */
+/* ================= WEB AUDIO API SOUND SYSTEM ================= */
 let audioCtx = null;
 function getAudioContext(){
     if(!audioCtx){
@@ -1477,6 +1492,11 @@ function getAudioContext(){
     return audioCtx;
 }
 
+// যে কোনো বাটনে চাপ দিলেই ব্রাউজারের অডিও লক খুলে যাবে
+window.addEventListener("click", () => {
+    getAudioContext();
+}, { once: false });
+
 function playBeepSound(){
     try {
         const ctx = getAudioContext();
@@ -1486,13 +1506,13 @@ function playBeepSound(){
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.type = "sine";
-        osc.frequency.setValueAtTime(800, ctx.currentTime);
-        gain.gain.setValueAtTime(0.18, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
         osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.25);
+        osc.stop(ctx.currentTime + 0.22);
     } catch(e){
-        console.error(e);
+        console.error("Audio beep error:", e);
     }
 }
 
@@ -1506,19 +1526,25 @@ function playFlashChime(){
             const gain = ctx.createGain();
             osc.connect(gain);
             gain.connect(ctx.destination);
-            osc.frequency.setValueAtTime(freq, now + i * 0.1);
-            gain.gain.setValueAtTime(0.2, now + i * 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.35);
-            osc.start(now + i * 0.1);
-            osc.stop(now + i * 0.1 + 0.35);
+            osc.frequency.setValueAtTime(freq, now + i * 0.12);
+            gain.gain.setValueAtTime(0.25, now + i * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.4);
+            osc.start(now + i * 0.12);
+            osc.stop(now + i * 0.12 + 0.4);
         });
     } catch(e){
-        console.error(e);
+        console.error("Flash chime error:", e);
     }
 }
 
-let lastHandledChatCount = 0;
-let lastHandledFlashCount = 0;
+function testSoundAlert(){
+    getAudioContext();
+    playBeepSound();
+    setTimeout(() => playFlashChime(), 300);
+    toast("সাউন্ড টেস্ট সম্পন্ন! বিপ ও চিম শব্দ প্লে হচ্ছে।");
+}
+
+let isInitialFirebaseLoad = true;
 
 function initFirebase(url){
     if(!url) return;
@@ -1545,21 +1571,23 @@ function initFirebase(url){
                 localStorage.setItem(DB_KEY, JSON.stringify(db));
 
                 if(currentUser){
-                    // Sound on new chat
-                    if(db.chats.length > oldChatLen && oldChatLen > 0){
-                        const latest = db.chats[db.chats.length - 1];
-                        if(latest && latest.senderId !== currentUser.id){
-                            playBeepSound();
+                    if(!isInitialFirebaseLoad){
+                        // নতুন মেসেজ এলে বিপ শব্দ হবে
+                        if(db.chats.length > oldChatLen){
+                            const latest = db.chats[db.chats.length - 1];
+                            if(latest && latest.senderId !== currentUser.id){
+                                playBeepSound();
+                            }
+                        }
+
+                        // নতুন ফ্ল্যাশ নোটিশ এলে অ্যালার্ট সাউন্ড ও ব্যানার ওপেন হবে
+                        if(db.flashNotices.length > oldFlashLen){
+                            checkAndShowLatestFlash(true);
                         }
                     }
-
-                    // Alert on new flash notice
-                    if(db.flashNotices.length > oldFlashLen && oldFlashLen > 0){
-                        checkAndShowLatestFlash(true);
-                    }
-
                     renderAll();
                 }
+                isInitialFirebaseLoad = false;
             }
         });
     } catch(e){
@@ -1598,7 +1626,7 @@ function setLoginType(type){
 
 function login(e){
     e.preventDefault();
-    getAudioContext(); // Initialize audio context on user interaction
+    getAudioContext(); // লগইনে ক্লিক করলেই সাউন্ড পারমিশন সক্রিয় হবে
     const rawId = document.getElementById("loginId").value;
     const rawPass = document.getElementById("loginPassword").value;
 
@@ -1646,16 +1674,16 @@ function startApp(){
     document.getElementById("topUserName").textContent = currentUser.name;
     document.getElementById("roleLabel").textContent = currentUser.role === "ADMIN" ? "Admin Panel" : "Member Portal";
 
-    lastHandledChatCount = (db.chats || []).length;
-    lastHandledFlashCount = (db.flashNotices || []).length;
-
     if(currentUser.role === "ADMIN"){
         showPage("dashboard");
     } else {
         showPage("memberDashboard");
     }
     renderAll();
-    checkAndShowLatestFlash(true);
+    // অ্যাপ খোলার পর শেষ নোটিশ থাকলে পপআপ হবে এবং সাউন্ড বাজবে
+    setTimeout(() => {
+        checkAndShowLatestFlash(true);
+    }, 400);
 }
 
 function logout(){
@@ -1713,7 +1741,7 @@ function renderChatInterface(){
 
 function selectChatChannel(channelId){
     activeChatChannel = channelId;
-    playBeepSound(); // Sound on entering/switching chat
+    playBeepSound();
     renderChatInterface();
 }
 
@@ -1733,7 +1761,6 @@ function renderChatChannels(){
 
     // 2. Individual Direct Chats
     if(currentUser.role === "ADMIN"){
-        // Admin sees all active members to chat privately
         db.members.filter(m => !m.isSettled).forEach(m => {
             const isMActive = activeChatChannel === m.id;
             list.innerHTML += `
@@ -1744,7 +1771,6 @@ function renderChatChannels(){
             `;
         });
     } else {
-        // Members see option to chat with Admin directly
         const isAdmActive = activeChatChannel === "ADMIN_DIRECT";
         list.innerHTML += `
             <div class="chat-channel-item ${isAdmActive ? 'active' : ''}" onclick="selectChatChannel('ADMIN_DIRECT')">
@@ -1789,12 +1815,21 @@ function renderChatMessages(){
         return c.channel === filterChannel;
     });
 
+    const isAdmin = currentUser.role === "ADMIN";
+
     filtered.forEach(msg => {
         const isMe = msg.senderId === currentUser.id;
         const timeStr = new Date(msg.time).toLocaleTimeString("bn-IN", { hour: '2-digit', minute: '2-digit' });
+        
+        // শুধু admin-ই মেসেজ ডিলিট করতে পারবে
+        const deleteBtn = isAdmin ? `<button class="chat-del-btn" title="মেসেজ ডিলিট করুন" onclick="deleteChatMessage('${msg.id}')">🗑️</button>` : '';
+
         box.innerHTML += `
             <div class="chat-msg ${isMe ? 'me' : 'other'}">
-                <div class="chat-msg-sender">${isMe ? 'আমি' : msg.senderName} (${msg.senderRole})</div>
+                <div class="chat-msg-sender">
+                    <span>${isMe ? 'আমি' : msg.senderName} (${msg.senderRole})</span>
+                    ${deleteBtn}
+                </div>
                 <div>${msg.text}</div>
                 <div class="chat-msg-time">${timeStr}</div>
             </div>
@@ -1810,6 +1845,7 @@ function renderChatMessages(){
 
 function sendChatMessage(e){
     e.preventDefault();
+    getAudioContext();
     const input = document.getElementById("chatMessageInput");
     const text = input.value.trim();
     if(!text) return;
@@ -1838,6 +1874,20 @@ function sendChatMessage(e){
     renderChatMessages();
 }
 
+/* অ্যাডমিন মেসেজ ডিলিট করার ফাংশন */
+function deleteChatMessage(msgId){
+    if(currentUser.role !== "ADMIN"){
+        toast("❌ শুধুমাত্র অ্যাডমিন মেসেজ ডিলিট করতে পারবেন!");
+        return;
+    }
+    if(confirm("আপনি কি নিশ্চিত এই বার্তাটি মুছে ফেলতে চান?")){
+        db.chats = (db.chats || []).filter(m => m.id !== msgId);
+        saveDB();
+        renderChatMessages();
+        toast("মেসেজটি মুছে ফেলা হয়েছে।");
+    }
+}
+
 /* FLASH NOTICES LOGIC */
 function openFlashModal(){
     document.getElementById("flashTitle").value = "";
@@ -1846,6 +1896,7 @@ function openFlashModal(){
 }
 
 function submitFlashNotice(){
+    getAudioContext();
     const title = document.getElementById("flashTitle").value.trim();
     const text = document.getElementById("flashText").value.trim();
 
