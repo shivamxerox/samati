@@ -442,16 +442,155 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     box-shadow:0 4px 10px rgba(0,0,0,0.06);
 }
 
+/* CHAT BOX STYLES */
+.chat-container{
+    display:flex;
+    height:600px;
+    border:1px solid var(--border);
+    border-radius:16px;
+    background:#fff;
+    overflow:hidden;
+}
+.chat-sidebar{
+    width:280px;
+    border-right:1px solid var(--border);
+    background:#fffdfa;
+    display:flex;
+    flex-direction:column;
+}
+.chat-sidebar-header{
+    padding:14px;
+    background:#fff7ed;
+    font-weight:bold;
+    border-bottom:1px solid var(--border);
+    color:#7c2d12;
+}
+.chat-channel-list{
+    flex:1;
+    overflow-y:auto;
+}
+.chat-channel-item{
+    padding:12px 14px;
+    cursor:pointer;
+    border-bottom:1px solid #ffedd5;
+    font-size:14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.chat-channel-item:hover, .chat-channel-item.active{
+    background:#ffedd5;
+    color:var(--primary);
+    font-weight:bold;
+}
+.chat-main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    background:#fdfcf9;
+}
+.chat-header{
+    padding:14px;
+    border-bottom:1px solid var(--border);
+    background:#fff;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.chat-messages{
+    flex:1;
+    padding:16px;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+.chat-msg{
+    max-width:70%;
+    padding:10px 14px;
+    border-radius:14px;
+    font-size:13px;
+    line-height:1.4;
+    word-break:break-word;
+}
+.chat-msg.me{
+    align-self:flex-end;
+    background:var(--primary);
+    color:white;
+    border-bottom-right-radius:2px;
+}
+.chat-msg.other{
+    align-self:flex-start;
+    background:#ffedd5;
+    color:#431407;
+    border-bottom-left-radius:2px;
+}
+.chat-msg-sender{
+    font-size:11px;
+    font-weight:bold;
+    margin-bottom:3px;
+    opacity:0.85;
+}
+.chat-msg-time{
+    font-size:10px;
+    opacity:0.75;
+    margin-top:4px;
+    text-align:right;
+}
+.chat-input-bar{
+    padding:12px;
+    background:#fff;
+    border-top:1px solid var(--border);
+    display:flex;
+    gap:10px;
+}
+
+/* FLASH MESSAGE POPUP BANNER */
+.flash-banner{
+    position:fixed;
+    top:20px;
+    left:50%;
+    transform:translateX(-50%);
+    width:90%;
+    max-width:650px;
+    background:linear-gradient(135deg, #b91c1c, #ea580c);
+    color:#fff;
+    padding:16px 20px;
+    border-radius:16px;
+    box-shadow:0 15px 35px rgba(0,0,0,0.3);
+    z-index:9999;
+    display:none;
+    animation:alertPulse 2s infinite;
+}
+.flash-banner.show{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+}
+
 @media(max-width:768px){
     .sidebar{ transform:translateX(-100%); transition:.25s; }
     .sidebar.open{ transform:translateX(0); }
     .main{ margin-left:0; width:100%; }
     .mobile-menu{ display:block!important; }
+    .chat-container{ flex-direction:column; height:500px; }
+    .chat-sidebar{ width:100%; height:150px; }
 }
 .mobile-menu{ display:none; background:#ffedd5; border:0; padding:8px 12px; border-radius:8px; font-weight:bold; color:var(--primary); }
 </style>
 </head>
 <body>
+
+<!-- FLASH MESSAGE BANNER OVERLAY -->
+<div id="flashBanner" class="flash-banner">
+    <div style="font-size:32px;">⚡</div>
+    <div style="flex:1;">
+        <h4 style="font-size:16px;margin-bottom:4px;color:#fef08a;" id="flashBannerTitle">🚨 জরুরি ফ্ল্যাশ বার্তা</h4>
+        <p id="flashBannerText" style="font-size:14px;"></p>
+        <small id="flashBannerMeta" style="color:#fed7aa;font-size:11px;"></small>
+    </div>
+    <button class="close-btn" onclick="dismissFlashMessage()" style="background:rgba(255,255,255,0.2);color:#fff;">✕</button>
+</div>
 
 <!-- LOGIN SCREEN -->
 <div id="loginScreen" class="login-screen">
@@ -491,6 +630,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 
         <div class="nav" id="adminNav">
             <button class="active" onclick="showPage('dashboard',this)">📊 ড্যাশবোর্ড</button>
+            <button onclick="showPage('chatPage',this)">💬 চ্যাট ও ফ্ল্যাশ নোটিশ</button>
             <button onclick="showPage('members',this)">👥 মেম্বার খাতা ও পাসওয়ার্ড</button>
             <button onclick="showPage('pendingLoans',this)">📥 লোনের আবেদনসমূহ</button>
             <button onclick="showPage('loans',this)">🏦 লোন ব্যবস্থাপনা</button>
@@ -504,6 +644,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 
         <div class="nav hidden" id="memberNav">
             <button class="active" onclick="showPage('memberDashboard',this)">🏠 আমার ড্যাশবোর্ড</button>
+            <button onclick="showPage('chatPage',this)">💬 চ্যাট ও ফ্ল্যাশ নোটিশ</button>
             <button onclick="showPage('memberLoanApply',this)">🏦 লোনের আবেদন করুন</button>
             <button onclick="showPage('memberPayment',this)">💳 কিউআর কোডে পেমেন্ট পাঠান</button>
             <button onclick="showPage('memberSavings',this)">💰 আমার জমার খতিয়ান</button>
@@ -576,6 +717,43 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                             </thead>
                             <tbody id="dueAlertSummaryTable"></tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CHAT & FLASH MESSAGE PAGE -->
+            <section id="chatPage" class="page">
+                <div class="section-title">
+                    <h2>💬 চ্যাট সিস্টেম ও ফ্ল্যাশ মেসেজ</h2>
+                    <button class="btn btn-warning" onclick="openFlashModal()">⚡ নতুন ফ্ল্যাশ মেসেজ পাঠান</button>
+                </div>
+
+                <div class="chat-container">
+                    <div class="chat-sidebar">
+                        <div class="chat-sidebar-header">
+                            চ্যাট অপশন (গ্রুপ / পার্সোনাল)
+                        </div>
+                        <div class="chat-channel-list" id="chatChannelsList">
+                            <!-- Populated Dynamically -->
+                        </div>
+                    </div>
+
+                    <div class="chat-main">
+                        <div class="chat-header">
+                            <div>
+                                <b id="currentChatTitle">👥 সমিতির সাধারণ গ্রুপ চ্যাট</b>
+                                <div id="currentChatSub" style="font-size:12px;color:var(--muted);">সকল সদস্য উপস্থিত আছেন</div>
+                            </div>
+                        </div>
+
+                        <div class="chat-messages" id="chatMessagesBox">
+                            <!-- Message History -->
+                        </div>
+
+                        <form class="chat-input-bar" onsubmit="sendChatMessage(event)">
+                            <input id="chatMessageInput" placeholder="আপনার বার্তাটি লিখুন..." autocomplete="off" required>
+                            <button type="submit" class="btn btn-primary">পাঠান ✈️</button>
+                        </form>
                     </div>
                 </div>
             </section>
@@ -1013,6 +1191,24 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 </div>
 
 <!-- MODALS -->
+<div id="flashModal" class="modal">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 style="color:#b91c1c;">⚡ জরুরি ফ্ল্যাশ নোটিশ প্রকাশ</h3>
+            <button class="close-btn" onclick="closeModal('flashModal')">✕</button>
+        </div>
+        <div class="form-group">
+            <label>ফ্ল্যাশ মেসেজের শিরোনাম</label>
+            <input id="flashTitle" placeholder="উদাঃ জরুরি বৈঠক / পেমেন্ট অনুস্মারক" required>
+        </div>
+        <div class="form-group">
+            <label>বিস্তারিত মেসেজ</label>
+            <textarea id="flashText" rows="4" placeholder="সকলের উদ্দেশ্যে জরুরি বার্তাটি লিখুন..." required></textarea>
+        </div>
+        <button class="btn btn-primary full" onclick="submitFlashNotice()">🚀 ফ্ল্যাশ নোটিশ প্রচার করুন</button>
+    </div>
+</div>
+
 <div id="memberModal" class="modal">
     <div class="modal-box">
         <div class="modal-head">
@@ -1247,7 +1443,9 @@ const defaultInitialState = {
     payments: [],
     loans: [],
     expenses: [],
-    loanApplications: []
+    loanApplications: [],
+    chats: [],
+    flashNotices: []
 };
 
 let db = JSON.parse(localStorage.getItem(DB_KEY)) || defaultInitialState;
@@ -1258,10 +1456,69 @@ if(!db.payments) db.payments = [];
 if(!db.loans) db.loans = [];
 if(!db.expenses) db.expenses = [];
 if(!db.loanApplications) db.loanApplications = [];
+if(!db.chats) db.chats = [];
+if(!db.flashNotices) db.flashNotices = [];
 
 db.settings.firebaseUrl = CLOUD_FIREBASE_URL;
 
 let fbDb = null;
+let activeChatChannel = "GROUP"; // 'GROUP' or memberId
+
+/* SOUND SYNTHESIZER */
+let audioCtx = null;
+function getAudioContext(){
+    if(!audioCtx){
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if(AudioContext) audioCtx = new AudioContext();
+    }
+    if(audioCtx && audioCtx.state === 'suspended'){
+        audioCtx.resume();
+    }
+    return audioCtx;
+}
+
+function playBeepSound(){
+    try {
+        const ctx = getAudioContext();
+        if(!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.25);
+    } catch(e){
+        console.error(e);
+    }
+}
+
+function playFlashChime(){
+    try {
+        const ctx = getAudioContext();
+        if(!ctx) return;
+        const now = ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.setValueAtTime(freq, now + i * 0.1);
+            gain.gain.setValueAtTime(0.2, now + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.35);
+            osc.start(now + i * 0.1);
+            osc.stop(now + i * 0.1 + 0.35);
+        });
+    } catch(e){
+        console.error(e);
+    }
+}
+
+let lastHandledChatCount = 0;
+let lastHandledFlashCount = 0;
 
 function initFirebase(url){
     if(!url) return;
@@ -1273,14 +1530,34 @@ function initFirebase(url){
         fbDb.ref("samiti_db").on("value", (snap) => {
             const val = snap.val();
             if(val){
+                const oldChatLen = (db.chats || []).length;
+                const oldFlashLen = (db.flashNotices || []).length;
+
                 db = val;
                 if(!db.members) db.members = [];
                 if(!db.payments) db.payments = [];
                 if(!db.loans) db.loans = [];
                 if(!db.expenses) db.expenses = [];
                 if(!db.loanApplications) db.loanApplications = [];
+                if(!db.chats) db.chats = [];
+                if(!db.flashNotices) db.flashNotices = [];
+
                 localStorage.setItem(DB_KEY, JSON.stringify(db));
+
                 if(currentUser){
+                    // Sound on new chat
+                    if(db.chats.length > oldChatLen && oldChatLen > 0){
+                        const latest = db.chats[db.chats.length - 1];
+                        if(latest && latest.senderId !== currentUser.id){
+                            playBeepSound();
+                        }
+                    }
+
+                    // Alert on new flash notice
+                    if(db.flashNotices.length > oldFlashLen && oldFlashLen > 0){
+                        checkAndShowLatestFlash(true);
+                    }
+
                     renderAll();
                 }
             }
@@ -1321,6 +1598,7 @@ function setLoginType(type){
 
 function login(e){
     e.preventDefault();
+    getAudioContext(); // Initialize audio context on user interaction
     const rawId = document.getElementById("loginId").value;
     const rawPass = document.getElementById("loginPassword").value;
 
@@ -1331,7 +1609,6 @@ function login(e){
         const savedPass = (db.admin && db.admin.password) ? db.admin.password.trim() : "0255";
         const savedUser = (db.admin && db.admin.username) ? db.admin.username.trim().toLowerCase() : "shivam";
         
-        // শুধুমাত্র ডেটাবেসে থাকা পরিবর্তিত ইউজারনেম এবং পাসওয়ার্ড দিয়ে লগইন হবে
         if(id === savedUser && pass === savedPass){
             currentUser = { id: "admin", name: db.admin.name || "অ্যাডমিনিস্ট্রেটর", role: "ADMIN" };
             startApp();
@@ -1369,12 +1646,16 @@ function startApp(){
     document.getElementById("topUserName").textContent = currentUser.name;
     document.getElementById("roleLabel").textContent = currentUser.role === "ADMIN" ? "Admin Panel" : "Member Portal";
 
+    lastHandledChatCount = (db.chats || []).length;
+    lastHandledFlashCount = (db.flashNotices || []).length;
+
     if(currentUser.role === "ADMIN"){
         showPage("dashboard");
     } else {
         showPage("memberDashboard");
     }
     renderAll();
+    checkAndShowLatestFlash(true);
 }
 
 function logout(){
@@ -1392,6 +1673,7 @@ function showPage(id, btn){
 
     const titles = {
         dashboard: "📊 ড্যাশবোর্ড",
+        chatPage: "💬 চ্যাট ও নোটিশ",
         members: "👥 মেম্বার খাতা ও পাসওয়ার্ড",
         pendingLoans: "📥 লোনের আবেদনসমূহ",
         expenses: "💸 সমিতির খরচসমূহ",
@@ -1421,6 +1703,200 @@ function showPage(id, btn){
 
 function toggleSidebar(){
     document.getElementById("sidebar").classList.toggle("open");
+}
+
+/* ================= CHAT & FLASH MESSAGING ================= */
+function renderChatInterface(){
+    renderChatChannels();
+    renderChatMessages();
+}
+
+function selectChatChannel(channelId){
+    activeChatChannel = channelId;
+    playBeepSound(); // Sound on entering/switching chat
+    renderChatInterface();
+}
+
+function renderChatChannels(){
+    const list = document.getElementById("chatChannelsList");
+    if(!list) return;
+    list.innerHTML = "";
+
+    // 1. Group Chat
+    const isGroupActive = activeChatChannel === "GROUP";
+    list.innerHTML += `
+        <div class="chat-channel-item ${isGroupActive ? 'active' : ''}" onclick="selectChatChannel('GROUP')">
+            <span>👥 সাধারণ গ্রুপ চ্যাট</span>
+            <span class="badge badge-blue">Group</span>
+        </div>
+    `;
+
+    // 2. Individual Direct Chats
+    if(currentUser.role === "ADMIN"){
+        // Admin sees all active members to chat privately
+        db.members.filter(m => !m.isSettled).forEach(m => {
+            const isMActive = activeChatChannel === m.id;
+            list.innerHTML += `
+                <div class="chat-channel-item ${isMActive ? 'active' : ''}" onclick="selectChatChannel('${m.id}')">
+                    <span>👤 ${m.name}</span>
+                    <small style="color:var(--muted);">${m.id}</small>
+                </div>
+            `;
+        });
+    } else {
+        // Members see option to chat with Admin directly
+        const isAdmActive = activeChatChannel === "ADMIN_DIRECT";
+        list.innerHTML += `
+            <div class="chat-channel-item ${isAdmActive ? 'active' : ''}" onclick="selectChatChannel('ADMIN_DIRECT')">
+                <span>🛡️ অ্যাডমিন প্রাইভেট চ্যাট</span>
+                <span class="badge badge-warning">Direct</span>
+            </div>
+        `;
+    }
+}
+
+function renderChatMessages(){
+    const box = document.getElementById("chatMessagesBox");
+    const title = document.getElementById("currentChatTitle");
+    const sub = document.getElementById("currentChatSub");
+    if(!box) return;
+
+    let filterChannel = activeChatChannel;
+    if(currentUser.role === "MEMBER" && activeChatChannel === "ADMIN_DIRECT"){
+        filterChannel = currentUser.id;
+    }
+
+    if(activeChatChannel === "GROUP"){
+        title.textContent = "👥 সমিতির সাধারণ গ্রুপ চ্যাট";
+        sub.textContent = "অ্যাডমিন ও সকল সদস্য এই মেসেজগুলো দেখতে পাবেন";
+    } else {
+        if(currentUser.role === "ADMIN"){
+            const targetM = db.members.find(m => m.id === activeChatChannel);
+            title.textContent = `👤 প্রাইভেট চ্যাট: ${targetM ? targetM.name : 'সদস্য'}`;
+            sub.textContent = "শুধুমাত্র আপনি ও এই সদস্যের মধ্যকার গোপনীয় কথোপকথন";
+        } else {
+            title.textContent = `🛡️ অ্যাডমিনের সাথে সরাসরি চ্যাট`;
+            sub.textContent = "শুধুমাত্র আপনি ও অ্যাডমিন এটি দেখতে পাবেন";
+        }
+    }
+
+    box.innerHTML = "";
+
+    const filtered = (db.chats || []).filter(c => {
+        if(activeChatChannel === "GROUP"){
+            return c.channel === "GROUP";
+        }
+        return c.channel === filterChannel;
+    });
+
+    filtered.forEach(msg => {
+        const isMe = msg.senderId === currentUser.id;
+        const timeStr = new Date(msg.time).toLocaleTimeString("bn-IN", { hour: '2-digit', minute: '2-digit' });
+        box.innerHTML += `
+            <div class="chat-msg ${isMe ? 'me' : 'other'}">
+                <div class="chat-msg-sender">${isMe ? 'আমি' : msg.senderName} (${msg.senderRole})</div>
+                <div>${msg.text}</div>
+                <div class="chat-msg-time">${timeStr}</div>
+            </div>
+        `;
+    });
+
+    if(filtered.length === 0){
+        box.innerHTML = `<div style="text-align:center;color:var(--muted);margin-top:40px;font-size:13px;">এখনো কোনো মেসেজ পাঠানো হয়নি। কথোপকথন শুরু করুন!</div>`;
+    }
+
+    box.scrollTop = box.scrollHeight;
+}
+
+function sendChatMessage(e){
+    e.preventDefault();
+    const input = document.getElementById("chatMessageInput");
+    const text = input.value.trim();
+    if(!text) return;
+
+    let targetChannel = activeChatChannel;
+    if(currentUser.role === "MEMBER" && activeChatChannel === "ADMIN_DIRECT"){
+        targetChannel = currentUser.id;
+    }
+
+    const newMsg = {
+        id: "MSG-" + Date.now(),
+        channel: targetChannel,
+        senderId: currentUser.id,
+        senderName: currentUser.name,
+        senderRole: currentUser.role === "ADMIN" ? "অ্যাডমিন" : "সদস্য",
+        text: text,
+        time: new Date().toISOString()
+    };
+
+    if(!db.chats) db.chats = [];
+    db.chats.push(newMsg);
+    saveDB();
+    playBeepSound();
+
+    input.value = "";
+    renderChatMessages();
+}
+
+/* FLASH NOTICES LOGIC */
+function openFlashModal(){
+    document.getElementById("flashTitle").value = "";
+    document.getElementById("flashText").value = "";
+    document.getElementById("flashModal").classList.add("show");
+}
+
+function submitFlashNotice(){
+    const title = document.getElementById("flashTitle").value.trim();
+    const text = document.getElementById("flashText").value.trim();
+
+    if(!title || !text){
+        toast("দয়া করে শিরোনাম ও বিস্তারিত মেসেজ লিখুন");
+        return;
+    }
+
+    const notice = {
+        id: "FLASH-" + Date.now(),
+        senderId: currentUser.id,
+        senderName: currentUser.name,
+        senderRole: currentUser.role === "ADMIN" ? "অ্যাডমিন" : "সদস্য",
+        title: title,
+        text: text,
+        time: new Date().toISOString()
+    };
+
+    if(!db.flashNotices) db.flashNotices = [];
+    db.flashNotices.push(notice);
+    saveDB();
+    closeModal("flashModal");
+    toast("ফ্ল্যাশ মেসেজ প্রচারিত হয়েছে!");
+    checkAndShowLatestFlash(true);
+}
+
+function checkAndShowLatestFlash(withSound = false){
+    if(!db.flashNotices || db.flashNotices.length === 0) return;
+    const latest = db.flashNotices[db.flashNotices.length - 1];
+    
+    // Check if dismissed in this session
+    if(sessionStorage.getItem("LAST_DISMISSED_FLASH") === latest.id) return;
+
+    const banner = document.getElementById("flashBanner");
+    document.getElementById("flashBannerTitle").textContent = "⚡ " + latest.title;
+    document.getElementById("flashBannerText").textContent = latest.text;
+    document.getElementById("flashBannerMeta").textContent = `প্রেরক: ${latest.senderName} (${latest.senderRole}) • ${new Date(latest.time).toLocaleTimeString("bn-IN")}`;
+    
+    banner.classList.add("show");
+    if(withSound){
+        playFlashChime();
+    }
+}
+
+function dismissFlashMessage(){
+    const banner = document.getElementById("flashBanner");
+    banner.classList.remove("show");
+    if(db.flashNotices && db.flashNotices.length > 0){
+        const latest = db.flashNotices[db.flashNotices.length - 1];
+        sessionStorage.setItem("LAST_DISMISSED_FLASH", latest.id);
+    }
 }
 
 /* ================= FINANCIAL CALCULATIONS ================= */
@@ -1546,6 +2022,7 @@ function renderAll(){
         renderMemberHistory();
         renderMemberPaymentPortal();
     }
+    renderChatInterface();
 }
 
 function renderAdminDashboard(){
@@ -1626,6 +2103,7 @@ function renderMembersTable(){
                 <td><b>${m.password}</b></td>
                 <td>
                     ${!m.isSettled ? `
+                        <button class="btn btn-primary btn-sm" onclick="startIndividualChat('${m.id}')" title="আলাদা চ্যাট করুন">💬 চ্যাট</button>
                         <button class="btn btn-secondary btn-sm" onclick="requireActionAuth(()=>editMember('${m.id}'))">✏️</button>
                         <button class="btn btn-warning btn-sm" onclick="requireActionAuth(()=>promptResetPassword('${m.id}'))">🔑 পাসওয়ার্ড</button>
                         <button class="btn btn-danger btn-sm" onclick="requireActionAuth(()=>openSettleModal('${m.id}'))">🚪 বিদায়</button>
@@ -1638,6 +2116,11 @@ function renderMembersTable(){
     if(db.members.length === 0){
         tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:20px;">কোনো সদস্য যুক্ত করা হয়নি।</td></tr>`;
     }
+}
+
+function startIndividualChat(memberId){
+    selectChatChannel(memberId);
+    showPage('chatPage');
 }
 
 function renderPendingLoansTable(){
