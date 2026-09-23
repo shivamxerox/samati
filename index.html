@@ -462,14 +462,14 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
         <div class="subtitle">পরম শ্রদ্ধায় ঐক্য ও সমৃদ্ধির ডিজিটাল বন্ধন</div>
 
         <div class="login-tabs">
-            <button id="adminTab" class="active" onclick="setLoginType('Shivam')">অ্যাডমিন (Shivam)</button>
+            <button id="adminTab" class="active" onclick="setLoginType('admin')">অ্যাডমিন (Admin)</button>
             <button id="memberTab" onclick="setLoginType('member')">সদস্য (Member)</button>
         </div>
 
         <form onsubmit="login(event)">
             <div class="form-group">
                 <label id="loginIdLabel">অ্যাডমিন আইডি (Login ID)</label>
-                <input id="loginId" required autocomplete="username" placeholder="অ্যাডমিন আইডি দিন (Shivam)">
+                <input id="loginId" required autocomplete="username" placeholder="অ্যাডমিন আইডি দিন">
             </div>
             <div class="form-group">
                 <label>পাসওয়ার্ড (Password)</label>
@@ -779,8 +779,12 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                             </div>
                         </div>
                         <div class="form-group">
+                            <label>অ্যাডমিন ইউজারনেম (Login ID)</label>
+                            <input id="settingAdminUsername" type="text" placeholder="অ্যাডমিন আইডি দিন">
+                        </div>
+                        <div class="form-group">
                             <label>অ্যাডমিন লগইন পাসওয়ার্ড পরিবর্তন</label>
-                            <input id="settingAdminPassword" type="password">
+                            <input id="settingAdminPassword" type="password" placeholder="নতুন লগইন পাসওয়ার্ড দিন">
                         </div>
                         <div class="form-group" style="background:#fff7ed; padding:10px; border-radius:8px; border:1px solid #fed7aa;">
                             <label style="color:#b91c1c;">🔐 আলাদা অ্যাডমিন অ্যাকশন/এডিট পাসওয়ার্ড</label>
@@ -1221,7 +1225,6 @@ const CLOUD_FIREBASE_URL = "https://shivamxerox-64a10-default-rtdb.asia-southeas
 const DB_KEY = "JEROX_SAMITI_HINDU_PORTAL_V2";
 const BACKUP_KEY = "JEROX_SAMITI_LOCAL_BACKUP_SNAPSHOT";
 
-// আগের সমস্ত লেনদেন সম্পূর্ণ পরিষ্কার করে ফাঁকা প্রাথমিক অবস্থা
 const defaultInitialState = {
     admin: {
         name: "Shivam",
@@ -1309,7 +1312,7 @@ function setLoginType(type){
     const input = document.getElementById("loginId");
     if(type === "admin"){
         label.textContent = "অ্যাডমিন আইডি (Login ID)";
-        input.placeholder = "অ্যাডমিন আইডি দিন (admin)";
+        input.placeholder = "অ্যাডমিন আইডি দিন";
     } else {
         label.textContent = "সদস্য ইউজারনেম বা আইডি (Login ID / Member ID)";
         input.placeholder = "মেম্বার আইডি বা ইউজারনেম (উদাঃ M001)";
@@ -1325,13 +1328,11 @@ function login(e){
     const pass = (rawPass || "").trim();
 
     if(loginType === "admin"){
-        const savedPass = (db.admin && db.admin.password) ? db.admin.password.trim() : "123";
-        const savedUser = (db.admin && db.admin.username) ? db.admin.username.trim().toLowerCase() : "admin";
+        const savedPass = (db.admin && db.admin.password) ? db.admin.password.trim() : "0255";
+        const savedUser = (db.admin && db.admin.username) ? db.admin.username.trim().toLowerCase() : "shivam";
         
-        if((id === "admin" || id === savedUser) && (pass === "123" || pass === savedPass)){
-            if(!db.admin){
-                db.admin = { name: "অ্যাডমিনিস্ট্রেটর", username: "admin", password: pass, mobile: "" };
-            }
+        // শুধুমাত্র ডেটাবেসে থাকা পরিবর্তিত ইউজারনেম এবং পাসওয়ার্ড দিয়ে লগইন হবে
+        if(id === savedUser && pass === savedPass){
             currentUser = { id: "admin", name: db.admin.name || "অ্যাডমিনিস্ট্রেটর", role: "ADMIN" };
             startApp();
             return;
@@ -1515,9 +1516,9 @@ function totalSocietyCash(){
 }
 
 function requireActionAuth(callbackAction){
-    const currentActionPass = (db.settings && db.settings.actionPassword) ? db.settings.actionPassword : (db.admin ? db.admin.password : "123");
+    const currentActionPass = (db.settings && db.settings.actionPassword) ? db.settings.actionPassword : (db.admin ? db.admin.password : "0255");
     const pass = prompt("🔐 অ্যাডমিন অ্যাকশন পাসওয়ার্ড দিন (মেম্বার/লেনদেন এডিট করার জন্য):");
-    if(pass !== null && (pass.trim() === currentActionPass.trim() || pass.trim() === "123")){
+    if(pass !== null && (pass.trim() === currentActionPass.trim())){
         callbackAction();
     } else if(pass !== null){
         toast("❌ ভুল অ্যাকশন পাসওয়ার্ড!");
@@ -2189,7 +2190,6 @@ function saveMember(e){
             isSettled: false 
         });
 
-        // প্রথম তারিখে স্বয়ংক্রিয়ভাবে ২০,০০০ টাকা প্রারম্ভিক শেয়ার জমা এন্ট্রি
         db.payments.push({
             id: "PAY-ENTRY-" + Date.now(),
             memberId: id,
@@ -2647,8 +2647,9 @@ function loadSettings(){
     document.getElementById("settingAdminMobile").value = db.settings.adminMobile || (db.admin ? db.admin.mobile : "");
     document.getElementById("settingUpiId").value = db.settings.upiId || "";
     document.getElementById("settingQrLink").value = db.settings.qrCodeImage && db.settings.qrCodeImage.startsWith("http") ? db.settings.qrCodeImage : "";
-    document.getElementById("settingAdminPassword").value = db.admin ? db.admin.password : "123";
-    document.getElementById("settingAdminActionPassword").value = db.settings.actionPassword || "123";
+    document.getElementById("settingAdminUsername").value = db.admin ? (db.admin.username || "Shivam") : "Shivam";
+    document.getElementById("settingAdminPassword").value = db.admin ? db.admin.password : "0255";
+    document.getElementById("settingAdminActionPassword").value = db.settings.actionPassword || "0";
     document.getElementById("settingFirebaseUrl").value = db.settings.firebaseUrl || "";
 }
 
@@ -2662,14 +2663,26 @@ function saveSettings(){
     const link = document.getElementById("settingQrLink").value.trim();
     if(link) db.settings.qrCodeImage = link;
 
+    const newAdminUser = document.getElementById("settingAdminUsername").value.trim();
     const newAdminPass = document.getElementById("settingAdminPassword").value.trim();
-    if(newAdminPass) db.admin.password = newAdminPass;
+    
+    if(!db.admin) {
+        db.admin = { name: "Shivam", username: "Shivam", password: "0255", mobile: "" };
+    }
+    
+    if(newAdminUser) {
+        db.admin.username = newAdminUser;
+        db.admin.name = newAdminUser;
+    }
+    if(newAdminPass) {
+        db.admin.password = newAdminPass;
+    }
 
     const newActionPass = document.getElementById("settingAdminActionPassword").value.trim();
     if(newActionPass) db.settings.actionPassword = newActionPass;
 
     saveDB();
-    toast("সেটিংস সংরক্ষিত হয়েছে!");
+    toast("অ্যাডমিন আইডি ও পাসওয়ার্ড স্থায়ীভাবে সংরক্ষিত হয়েছে!");
     renderAll();
 }
 
@@ -2688,7 +2701,6 @@ function connectFirebaseDb(){
     }
 }
 
-// সকল লেনদেন ও ঋণ মুছে ফেলার ডেডিকেটেড ফাংশন
 function resetAllTransactionsData(){
     if(confirm("⚠️ আপনি কি নিশ্চিত যে সমস্ত লোন, পেমেন্ট ও খরচের হিসাব মুছে সম্পূর্ণ নতুন করে শুরু করতে চান?")){
         db.payments = [];
@@ -2696,7 +2708,6 @@ function resetAllTransactionsData(){
         db.expenses = [];
         db.loanApplications = [];
 
-        // সদস্যদের ২০,০০০ প্রারম্ভিক শেয়ার পুনরায় এন্ট্রি
         db.members.forEach(m => {
             db.payments.push({
                 id: "PAY-ENTRY-" + Date.now() + "-" + m.id,
