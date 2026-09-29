@@ -3,11 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>জেরক্স সমিতি - ডিজিটাল পরিচালন পোর্টাল</title>
+<title>জেরক্স সমিতি - ডিজিটাল পরিচালন পোর্টাল ও ভিডিও মিটিং</title>
 
 <!-- Firebase Realtime DB SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<!-- PeerJS for Real-time WebRTC Video & Audio Calling -->
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <style>
 *{
@@ -531,6 +533,9 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     font-weight:bold;
     margin-bottom:3px;
     opacity:0.85;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
 }
 .chat-msg-time{
     font-size:10px;
@@ -543,8 +548,8 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     background:transparent;
     border:0;
     color:#fca5a5;
-    font-size:12px;
-    margin-left:6px;
+    font-size:13px;
+    margin-left:8px;
 }
 .chat-del-btn:hover{
     color:#ef4444;
@@ -578,6 +583,99 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     display:flex;
     align-items:flex-start;
     gap:14px;
+}
+
+.screenshot-preview-thumb {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #fed7aa;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.screenshot-preview-thumb:hover {
+    transform: scale(1.05);
+}
+
+/* ================= VIDEO CALL & CONFERENCE STYLES ================= */
+.video-grid-container{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+    gap:16px;
+    margin-top:16px;
+}
+.video-tile{
+    background:#1c1917;
+    border-radius:16px;
+    overflow:hidden;
+    position:relative;
+    aspect-ratio:16/9;
+    box-shadow:0 4px 15px rgba(0,0,0,0.2);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:2px solid #fdba74;
+}
+.video-tile video{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+.video-tile.local video{
+    transform:scaleX(-1);
+}
+.video-tag{
+    position:absolute;
+    bottom:10px;
+    left:10px;
+    background:rgba(0,0,0,0.65);
+    color:#fff;
+    padding:4px 10px;
+    border-radius:8px;
+    font-size:12px;
+    font-weight:600;
+    backdrop-filter:blur(4px);
+}
+.video-controls{
+    display:flex;
+    gap:12px;
+    justify-content:center;
+    align-items:center;
+    background:#fff;
+    border:1px solid var(--border);
+    padding:14px 20px;
+    border-radius:18px;
+    margin-top:16px;
+    flex-wrap:wrap;
+    box-shadow:0 3px 10px rgba(0,0,0,0.05);
+}
+.video-btn{
+    width:48px;
+    height:48px;
+    border-radius:50%;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:0;
+    font-size:18px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+    transition:all 0.2s ease;
+}
+.video-btn:hover{
+    transform:scale(1.08);
+}
+.video-btn-danger{
+    background:#dc2626;
+    color:white;
+}
+.video-btn-secondary{
+    background:#4b5563;
+    color:white;
+}
+.video-btn-active{
+    background:#16a34a;
+    color:white;
 }
 
 @media(max-width:768px){
@@ -642,6 +740,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 
         <div class="nav" id="adminNav">
             <button class="active" onclick="showPage('dashboard',this)">📊 ড্যাশবোর্ড</button>
+            <button onclick="showPage('videoPage',this)">📹 ভিডিও মিটিং / কল</button>
             <button onclick="showPage('chatPage',this)">💬 চ্যাট ও ফ্ল্যাশ নোটিশ</button>
             <button onclick="showPage('members',this)">👥 মেম্বার খাতা ও পাসওয়ার্ড</button>
             <button onclick="showPage('pendingLoans',this)">📥 লোনের আবেদনসমূহ</button>
@@ -656,6 +755,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 
         <div class="nav hidden" id="memberNav">
             <button class="active" onclick="showPage('memberDashboard',this)">🏠 আমার ড্যাশবোর্ড</button>
+            <button onclick="showPage('videoPage',this)">📹 ভিডিও মিটিং / কল</button>
             <button onclick="showPage('chatPage',this)">💬 চ্যাট ও ফ্ল্যাশ নোটিশ</button>
             <button onclick="showPage('memberLoanApply',this)">🏦 লোনের আবেদন করুন</button>
             <button onclick="showPage('memberPayment',this)">💳 কিউআর কোডে পেমেন্ট পাঠান</button>
@@ -733,13 +833,83 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                 </div>
             </section>
 
+            <!-- VIDEO CALL / MEETING PAGE -->
+            <section id="videoPage" class="page">
+                <div class="section-title">
+                    <h2>📹 সমিতির ভিডিও মিটিং ও অনলাইন কল</h2>
+                    <span class="badge badge-success" id="videoConnStatus">🟢 ভিডিও সার্ভার সক্রিয়</span>
+                </div>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between;">
+                        <div>
+                            <h4 style="color:#7c2d12; margin-bottom:4px;">🔑 আপনার ভিডিও কানেকশন আইডি</h4>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <code id="myPeerIdDisplay" style="background:#fff7ed; padding:6px 12px; border-radius:8px; border:1px solid #fed7aa; font-weight:bold; color:var(--primary); font-size:14px;">তৈরি হচ্ছে...</code>
+                                <button class="btn btn-secondary btn-sm" onclick="copyPeerId()">📋 কপি করুন</button>
+                            </div>
+                        </div>
+
+                        <!-- শুধুমাত্র অ্যাডমিন সমস্ত মেম্বারকে একসাথে কল করতে পারবেন -->
+                        <div id="adminCallControlWrap" style="display:none; gap:10px; align-items:center; flex-wrap:wrap;">
+                            <button class="btn btn-primary" onclick="adminCallAllMembers()">📢 সকল সদস্যকে একসঙ্গে কল করুন</button>
+                            <input id="remotePeerIdInput" placeholder="নির্দিষ্ট সদস্য আইডি (ঐচ্ছিক)" style="width:200px;">
+                            <button class="btn btn-secondary" onclick="initiateDirectVideoCall()">📞 ১:১ কল</button>
+                        </div>
+                        <div id="memberCallControlWrap" style="display:none;">
+                            <div style="background:#fff7ed; padding:8px 14px; border-radius:10px; border:1px solid #fed7aa; color:#c2410c; font-size:13px; font-weight:bold;">
+                                ℹ️ শুধুমাত্র অ্যাডমিন কল শুরু করতে পারবেন। অ্যাডমিন কল করলে আপনি সরাসরি যুক্ত হতে পারবেন।
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Meeting Stream Grid -->
+                <div class="card" style="background:#291207; color:white; border:2px solid #7c2d12;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #431407; padding-bottom:10px;">
+                        <h4 style="color:#fed7aa;">🎥 লাইভ ভিডিও স্ক্রিন</h4>
+                        <div id="callDuration" style="font-size:13px; color:#fdba74;">কল সংযোগ নেই</div>
+                    </div>
+
+                    <div class="video-grid-container" id="videoGridContainer">
+                        <!-- Local Video -->
+                        <div class="video-tile local">
+                            <video id="localVideo" autoplay muted playsinline></video>
+                            <div class="video-tag" id="localVideoTag">👤 আমি (স্থানীয়)</div>
+                        </div>
+                        <!-- Remote Video -->
+                        <div class="video-tile">
+                            <video id="remoteVideo" autoplay playsinline></video>
+                            <div class="video-tag" id="remoteVideoTag">👥 অপেক্ষমান সদস্য</div>
+                        </div>
+                    </div>
+
+                    <!-- Call Media Controls -->
+                    <div class="video-controls">
+                        <button id="toggleMicBtn" class="video-btn video-btn-active" onclick="toggleMicrophone()" title="মাইক মিউট/আনমিউট">
+                            🎤
+                        </button>
+                        <button id="toggleCamBtn" class="video-btn video-btn-active" onclick="toggleCamera()" title="ক্যামেরা অন/অফ">
+                            📹
+                        </button>
+                        <button id="endCallBtn" class="video-btn video-btn-danger" onclick="endVideoCall(true)" title="কল শেষ করুন">
+                            📵
+                        </button>
+                        <button class="btn btn-gold btn-sm" onclick="broadcastMeetingRoomId()" title="গ্রুপে ভিডিও লিংক পাঠান">
+                            📢 চ্যাটে মিটিং আইডি পাঠান
+                        </button>
+                    </div>
+                </div>
+            </section>
+
             <!-- CHAT & FLASH MESSAGE PAGE -->
             <section id="chatPage" class="page">
                 <div class="section-title">
                     <h2>💬 চ্যাট সিস্টেম ও ফ্ল্যাশ মেসেজ</h2>
-                    <div style="display:flex;gap:8px;">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
                         <button class="btn btn-secondary" onclick="testSoundAlert()">🔊 টেস্ট সাউন্ড</button>
                         <button class="btn btn-warning" onclick="openFlashModal()">⚡ নতুন ফ্ল্যাশ নোটিশ পাঠান</button>
+                        <button id="adminManageFlashBtn" class="btn btn-danger hidden" onclick="openManageFlashModal()">🗑️ ফ্ল্যাশ নোটিশ ম্যানেজ</button>
                     </div>
                 </div>
 
@@ -748,9 +918,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                         <div class="chat-sidebar-header">
                             চ্যাট অপশন (গ্রুপ / পার্সোনাল)
                         </div>
-                        <div class="chat-channel-list" id="chatChannelsList">
-                            <!-- Populated Dynamically -->
-                        </div>
+                        <div class="chat-channel-list" id="chatChannelsList"></div>
                     </div>
 
                     <div class="chat-main">
@@ -761,9 +929,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                             </div>
                         </div>
 
-                        <div class="chat-messages" id="chatMessagesBox">
-                            <!-- Message History -->
-                        </div>
+                        <div class="chat-messages" id="chatMessagesBox"></div>
 
                         <form class="chat-input-bar" onsubmit="sendChatMessage(event)">
                             <input id="chatMessageInput" placeholder="আপনার বার্তাটি লিখুন..." autocomplete="off" required>
@@ -856,6 +1022,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                                 <th>খাত</th>
                                 <th>পরিমাণ</th>
                                 <th>মাধ্যম</th>
+                                <th>স্ক্রিনশট</th>
                                 <th>স্ট্যাটাস</th>
                                 <th>অ্যাকশন</th>
                             </tr>
@@ -904,6 +1071,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                                 <th>খাত</th>
                                 <th>পরিমাণ</th>
                                 <th>মেথড / ট্রানজ্যাকশন</th>
+                                <th>স্ক্রিনশট</th>
                                 <th>অ্যাকশন</th>
                             </tr>
                         </thead>
@@ -1100,25 +1268,26 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                     <div class="card">
                         <h4 style="margin-bottom:12px; color:#7c2d12;">📝 পেমেন্ট অপশন বাছুন</h4>
                         
-                        <!-- সদস্যের লাইভ বকেয়া তথ্য -->
                         <div class="due-summary-box">
                             <div><span>📌 সঞ্চয় বকেয়া (Savings Due):</span> <b id="mBoxSavingsDue" style="color:var(--danger)">₹0</b></div>
-                            <div><span>📌 লোনের বাকি আসল (Principal):</span> <b id="mBoxLoanPrincipal" style="color:var(--dark)">₹0</b></div>
-                            <div><span>📌 বকেয়া সুদ (Interest Due):</span> <b id="mBoxInterestDue" style="color:var(--warning)">₹0</b></div>
+                            <div><span>📌 লোনের মোট বাকি আসল (Principal):</span> <b id="mBoxLoanPrincipal" style="color:var(--dark)">₹0</b></div>
+                            <div><span>📌 মোট বকেয়া সুদ (Interest Due):</span> <b id="mBoxInterestDue" style="color:var(--warning)">₹0</b></div>
                         </div>
 
                         <div class="form-group">
                             <label>পেমেন্টের খাত সিলেক্ট করুন</label>
                             <select id="mPayType" onchange="onMemberPaymentTypeChange()">
                                 <option value="SAVINGS">মাসিক সঞ্চয় জমা (অটোমেটিক ডিউ)</option>
-                                <option value="LOAN_INTEREST">লোনের সুদ পরিশোধ (অটোমেটিক সুদ ডিউ)</option>
-                                <option value="LOAN_PRINCIPAL">লোনের আসল পরিশোধ (ইচ্ছামতো পরিমাণ)</option>
+                                <option value="LOAN_INTEREST">সকল লোনের একত্র বকেয়া সুদ পরিশোধ (অটোমেটিক ক্যালকুলেশন)</option>
+                                <option value="LOAN_PRINCIPAL">লোনের আসল পরিশোধ (সকল লোন একত্রে বা আংশিক)</option>
                             </select>
                         </div>
-                        <div id="loanSelectionDiv" class="form-group hidden">
-                            <label>লোন অ্যাকাউন্ট সিলেক্ট করুন</label>
-                            <select id="mPayLoanSelect" onchange="onMemberLoanSelectChange()"></select>
+                        
+                        <div id="loanSelectionDiv" class="form-group" style="background:#fff7ed; padding:10px; border-radius:10px; border:1px solid #fed7aa; display:none;">
+                            <label style="color:#c2410c; font-weight:bold;">ℹ️ আপনার লোনসমূহের স্থিতি:</label>
+                            <div id="mCombinedLoanInfo" style="font-size:13px; color:#431407; margin-top:4px;"></div>
                         </div>
+
                         <div class="form-group">
                             <label id="mPayAmountLabel">প্রদেয় টাকার পরিমাণ (₹)</label>
                             <input id="mPayAmount" type="number" min="1" placeholder="টাকার পরিমাণ" oninput="updateMemberDynamicQr()">
@@ -1135,6 +1304,17 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                             <label>ইউপিআই রেফারেন্স / UTR নম্বর (পে করার পর দিন)</label>
                             <input id="mPayUtr" placeholder="১২ সংখ্যার UTR বা ট্রানজ্যাকশন আইডি">
                         </div>
+                        
+                        <!-- সদস্যের পেমেন্ট স্ক্রিনশট আপলোড -->
+                        <div class="form-group" style="background:#fdfcf9; border:1px dashed var(--border); padding:10px; border-radius:10px;">
+                            <label style="color:#7c2d12;">📸 পেমেন্টের স্ক্রিনশট যুক্ত করুন (ঐচ্ছিক কিন্তু বাঞ্ছনীয়):</label>
+                            <input type="file" id="mPayReceiptFile" accept="image/*" onchange="handleReceiptUpload(event)">
+                            <div id="receiptPreviewBox" style="margin-top:8px; display:none;">
+                                <small style="display:block; color:var(--muted); margin-bottom:4px;">প্রিভিউ:</small>
+                                <img id="receiptPreviewImg" src="" style="max-height:120px; border-radius:8px; border:1px solid #fed7aa;">
+                            </div>
+                        </div>
+
                         <button class="btn btn-primary full" onclick="submitMemberPayment()">📤 পেমেন্টের তথ্য পাঠিয়ে দিন</button>
                     </div>
                 </div>
@@ -1173,6 +1353,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                                 <th>খাত</th>
                                 <th>পরিমাণ</th>
                                 <th>মাধ্যম</th>
+                                <th>স্ক্রিনশট</th>
                                 <th>স্ট্যাটাস</th>
                             </tr>
                         </thead>
@@ -1221,6 +1402,45 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
             <textarea id="flashText" rows="4" placeholder="সকলের উদ্দেশ্যে জরুরি বার্তাটি লিখুন..." required></textarea>
         </div>
         <button class="btn btn-primary full" onclick="submitFlashNotice()">🚀 ফ্ল্যাশ নোটিশ প্রচার করুন</button>
+    </div>
+</div>
+
+<!-- অ্যাডমিন ফ্ল্যাশ নোটিশ ম্যানেজ মোডাল -->
+<div id="manageFlashModal" class="modal">
+    <div class="modal-box" style="max-width:650px;">
+        <div class="modal-head">
+            <h3 style="color:#b91c1c;">🗑️ সকল ফ্ল্যাশ নোটিশ তালিকা ও ডিলিট</h3>
+            <button class="close-btn" onclick="closeModal('manageFlashModal')">✕</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>তারিখ</th>
+                        <th>শিরোনাম ও বার্তা</th>
+                        <th>প্রেরক</th>
+                        <th>অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="flashNoticesTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- স্ক্রিনশট দেখার মোডাল -->
+<div id="imageViewerModal" class="modal">
+    <div class="modal-box" style="text-align:center;">
+        <div class="modal-head">
+            <h3>📸 পেমেন্ট স্ক্রিনশট / রসিদ</h3>
+            <button class="close-btn" onclick="closeModal('imageViewerModal')">✕</button>
+        </div>
+        <div style="padding:10px;">
+            <img id="imageViewerTarget" src="" alt="রসিদ" style="max-width:100%; max-height:70vh; border-radius:10px; border:2px solid #fed7aa; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+        </div>
+        <div style="margin-top:12px;">
+            <a id="downloadReceiptBtn" href="#" download="payment_receipt.jpg" class="btn btn-primary">📥 ডাউনলোড করুন</a>
+        </div>
     </div>
 </div>
 
@@ -1349,21 +1569,17 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 
         <div class="due-summary-box" id="adminMemberDueInfoBox">
             <div><span>📌 সঞ্চয় বকেয়া:</span> <b id="admBoxSavingsDue" style="color:var(--danger)">₹0</b></div>
-            <div><span>📌 লোনের বাকি আসল:</span> <b id="admBoxLoanPrincipal" style="color:var(--dark)">₹0</b></div>
-            <div><span>📌 বকেয়া সুদ:</span> <b id="admBoxInterestDue" style="color:var(--warning)">₹0</b></div>
+            <div><span>📌 লোনের একত্র মোট বাকি আসল:</span> <b id="admBoxLoanPrincipal" style="color:var(--dark)">₹0</b></div>
+            <div><span>📌 একত্র মোট বকেয়া সুদ:</span> <b id="admBoxInterestDue" style="color:var(--warning)">₹0</b></div>
         </div>
 
         <div class="form-group">
             <label>পেমেন্টের খাত বা ধরণ বাছুন</label>
             <select id="payTypeSelect" onchange="toggleAdminLoanField()">
                 <option value="SAVINGS">মাসিক সঞ্চয় জমা</option>
-                <option value="LOAN_INTEREST">লোনের সুদ পরিশোধ (Interest Pay)</option>
-                <option value="LOAN_PRINCIPAL">লোনের আসল পরিশোধ (Loan Pay)</option>
+                <option value="LOAN_INTEREST">একত্রে সকল লোনের সুদ পরিশোধ (Interest Pay)</option>
+                <option value="LOAN_PRINCIPAL">একত্রে লোনের আসল পরিশোধ (Loan Principal)</option>
             </select>
-        </div>
-        <div id="adminLoanSelectDiv" class="form-group hidden">
-            <label>লোন অ্যাকাউন্ট সিলেক্ট করুন</label>
-            <select id="adminPayLoanSelect" onchange="updateAdminLoanDueAmount()"></select>
         </div>
         <div class="form-group">
             <label>পরিমাণ (₹)</label>
@@ -1390,19 +1606,15 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
         <input type="hidden" id="editPaymentId">
         <div class="form-group">
             <label>মেম্বার</label>
-            <select id="editPayMemberSelect" onchange="onEditPayMemberChanged()"></select>
+            <select id="editPayMemberSelect"></select>
         </div>
         <div class="form-group">
             <label>পেমেন্টের খাত বা ধরণ</label>
-            <select id="editPayTypeSelect" onchange="toggleEditPaymentLoanField()">
+            <select id="editPayTypeSelect">
                 <option value="SAVINGS">মাসিক সঞ্চয় জমা</option>
                 <option value="LOAN_INTEREST">লোনের সুদ পরিশোধ (Interest Pay)</option>
                 <option value="LOAN_PRINCIPAL">লোনের আসল পরিশোধ (Loan Pay)</option>
             </select>
-        </div>
-        <div id="editPayLoanDiv" class="form-group hidden">
-            <label>লোন অ্যাকাউন্ট সিলেক্ট করুন</label>
-            <select id="editPayLoanSelect"></select>
         </div>
         <div class="form-group">
             <label>পরিমাণ (₹)</label>
@@ -1478,6 +1690,7 @@ db.settings.firebaseUrl = CLOUD_FIREBASE_URL;
 
 let fbDb = null;
 let activeChatChannel = "GROUP"; // 'GROUP' or memberId
+let uploadedReceiptBase64 = "";
 
 /* ================= WEB AUDIO API SOUND SYSTEM ================= */
 let audioCtx = null;
@@ -1492,7 +1705,6 @@ function getAudioContext(){
     return audioCtx;
 }
 
-// যে কোনো বাটনে চাপ দিলেই ব্রাউজারের অডিও লক খুলে যাবে
 window.addEventListener("click", () => {
     getAudioContext();
 }, { once: false });
@@ -1572,7 +1784,6 @@ function initFirebase(url){
 
                 if(currentUser){
                     if(!isInitialFirebaseLoad){
-                        // নতুন মেসেজ এলে বিপ শব্দ হবে
                         if(db.chats.length > oldChatLen){
                             const latest = db.chats[db.chats.length - 1];
                             if(latest && latest.senderId !== currentUser.id){
@@ -1580,7 +1791,6 @@ function initFirebase(url){
                             }
                         }
 
-                        // নতুন ফ্ল্যাশ নোটিশ এলে অ্যালার্ট সাউন্ড ও ব্যানার ওপেন হবে
                         if(db.flashNotices.length > oldFlashLen){
                             checkAndShowLatestFlash(true);
                         }
@@ -1590,6 +1800,13 @@ function initFirebase(url){
                 isInitialFirebaseLoad = false;
             }
         });
+
+        // সিগন্যালিং সিস্টেম: অ্যাডমিন কল শুরু বা শেষ করলে মেম্বারদের কাছে স্বয়ংক্রিয়ভাবে সংকেত যাবে
+        fbDb.ref("samiti_live_call").on("value", (snap) => {
+            const callData = snap.val();
+            handleLiveCallSignal(callData);
+        });
+
     } catch(e){
         console.error("Firebase connection error", e);
     }
@@ -1604,6 +1821,331 @@ function saveDB(){
 
 let loginType = "admin";
 let currentUser = null;
+
+/* ================= WEBRTC VIDEO CHAT ENGINE (PEERJS) ================= */
+let peer = null;
+let currentPeerCall = null;
+let activeCallsList = [];
+let localMediaStream = null;
+let callStartTime = null;
+let callDurationTimer = null;
+let isAudioMuted = false;
+let isVideoStopped = false;
+let lastSignalCallId = null;
+
+function initPeerVideoCall(){
+    if(!currentUser) return;
+    if(peer) return;
+
+    try {
+        const peerCleanId = "jerox_" + currentUser.id.toLowerCase().replace(/[^a-z0-9]/g, "");
+        peer = new Peer(peerCleanId, {
+            debug: 1,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' }
+                ]
+            }
+        });
+
+        peer.on('open', (id) => {
+            const disp = document.getElementById("myPeerIdDisplay");
+            if(disp) disp.textContent = id;
+            const stat = document.getElementById("videoConnStatus");
+            if(stat) stat.textContent = "🟢 সংযুক্ত (Online)";
+        });
+
+        // শুধুমাত্র অ্যাডমিনের কল আসলেই মেম্বার কল ধরতে পারবে (সদস্য নিজে ইচ্ছামত কল করতে পারবে না)
+        peer.on('call', (call) => {
+            const callerId = (call.peer || "").toLowerCase();
+            const isAdminCall = callerId.includes("admin") || callerId.includes("jerox_admin");
+
+            if(!isAdminCall && currentUser.role === "MEMBER"){
+                call.close();
+                toast("⚠️ মেম্বাররা একে অপরকে কল করতে পারবে না। শুধুমাত্র অ্যাডমিন কল করতে পারেন।");
+                return;
+            }
+
+            ensureLocalMediaStream().then(stream => {
+                call.answer(stream);
+                setupCallStreamHandlers(call);
+                toast(`📹 অ্যাডমিনের ভিডিও মিটিংয়ে সরাসরি সংযুক্ত হয়েছে!`);
+            }).catch(err => {
+                console.error("Camera access failed on incoming call:", err);
+                toast("❌ ক্যামেরা ও মাইক্রোফোন পারমিশন প্রয়োজন!");
+            });
+        });
+
+        peer.on('error', (err) => {
+            console.error("PeerJS error:", err);
+            const disp = document.getElementById("myPeerIdDisplay");
+            if(disp && disp.textContent === "তৈরি হচ্ছে...") {
+                peer = new Peer();
+                peer.on('open', (id) => {
+                    disp.textContent = id;
+                });
+            }
+        });
+    } catch(e) {
+        console.error("Failed to initialize PeerJS:", e);
+    }
+}
+
+// লাইভ সিগন্যাল হ্যান্ডলার: অ্যাডমিন কল করলে মেম্বার স্ক্রিন ওপেন হবে ও অটো কল রিসিভ হবে
+function handleLiveCallSignal(callData){
+    if(!currentUser) return;
+
+    if(!callData || callData.status === "ENDED"){
+        if(currentPeerCall || activeCallsList.length > 0){
+            endVideoCall(false);
+            toast("📵 অ্যাডমিন কল সমাপ্ত করেছেন। সকল কল কেটে দেওয়া হয়েছে।");
+        }
+        return;
+    }
+
+    if(callData.status === "ACTIVE" && currentUser.role === "MEMBER"){
+        if(lastSignalCallId !== callData.callId){
+            lastSignalCallId = callData.callId;
+            showPage("videoPage");
+            playFlashChime();
+            toast("🚨 অ্যাডমিন সকল সদস্যের সাথে ভিডিও কল শুরু করেছেন! কল রিসিভ হচ্ছে...");
+            ensureLocalMediaStream().catch(()=>{});
+        }
+    }
+}
+
+async function ensureLocalMediaStream(){
+    if(localMediaStream) return localMediaStream;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 640 }, height: { ideal: 480 } },
+            audio: true
+        });
+        localMediaStream = stream;
+        const localVid = document.getElementById("localVideo");
+        if(localVid){
+            localVid.srcObject = stream;
+        }
+        document.getElementById("localVideoTag").textContent = `👤 ${currentUser ? currentUser.name : 'আমি'} (স্থানীয়)`;
+        return stream;
+    } catch(e) {
+        console.warn("Unable to get video/audio permission:", e);
+        throw e;
+    }
+}
+
+// অ্যাডমিনের একক বোতামে সমস্ত সদস্যকে একসাথে কল করা
+function adminCallAllMembers(){
+    if(currentUser.role !== "ADMIN"){
+        toast("❌ শুধুমাত্র অ্যাডমিন কল শুরু করতে পারবেন!");
+        return;
+    }
+
+    const activeMembers = db.members.filter(m => !m.isSettled);
+    if(activeMembers.length === 0){
+        toast("কোনো সক্রিয় সদস্য পাওয়া যায়নি!");
+        return;
+    }
+
+    ensureLocalMediaStream().then(stream => {
+        toast("📢 সকল সদস্যকে কল পাঠানো হচ্ছে...");
+        activeCallsList = [];
+
+        // ফায়ারবেসে গ্লোবাল কল সিগন্যাল পাঠানো
+        if(fbDb){
+            fbDb.ref("samiti_live_call").set({
+                status: "ACTIVE",
+                callId: "CALL_" + Date.now(),
+                adminPeerId: document.getElementById("myPeerIdDisplay").textContent,
+                startedAt: new Date().toISOString()
+            });
+        }
+
+        activeMembers.forEach(m => {
+            const peerId = "jerox_" + m.id.toLowerCase().replace(/[^a-z0-9]/g, "");
+            const call = peer.call(peerId, stream);
+            if(call){
+                activeCallsList.push(call);
+                setupCallStreamHandlers(call);
+            }
+        });
+
+        startCallTimer();
+    }).catch(err => {
+        toast("❌ ক্যামেরা ও মাইক পারমিশন দিন!");
+    });
+}
+
+function initiateDirectVideoCall(){
+    if(currentUser.role !== "ADMIN"){
+        toast("❌ সদস্যরা সরাসরি কল করতে পারবে না!");
+        return;
+    }
+
+    const remoteInput = document.getElementById("remotePeerIdInput");
+    const targetId = remoteInput.value.trim();
+    if(!targetId){
+        toast("কল করার জন্য গ্রাহকের আইডি লিখুন!");
+        return;
+    }
+
+    toast("ভিডিও কল সংযোগ করা হচ্ছে...");
+    ensureLocalMediaStream().then(stream => {
+        const call = peer.call(targetId, stream);
+        if(!call){
+            toast("কল সংযোগ স্থাপন করা যায়নি!");
+            return;
+        }
+        setupCallStreamHandlers(call);
+    }).catch(err => {
+        toast("❌ ক্যামেরা পারমিশন দেওয়া হয়নি বা ক্যামেরা পাওয়া যায়নি!");
+    });
+}
+
+function setupCallStreamHandlers(call){
+    currentPeerCall = call;
+    startCallTimer();
+
+    call.on('stream', (remoteStream) => {
+        const remVid = document.getElementById("remoteVideo");
+        if(remVid){
+            remVid.srcObject = remoteStream;
+            document.getElementById("remoteVideoTag").textContent = `👥 সংযুক্ত সদস্য (${call.peer})`;
+        }
+    });
+
+    call.on('close', () => {
+        if(currentUser.role === "MEMBER"){
+            endVideoCall(false);
+        }
+    });
+
+    call.on('error', (e) => {
+        console.error("Call error:", e);
+    });
+}
+
+function startCallTimer(){
+    callStartTime = Date.now();
+    clearInterval(callDurationTimer);
+    callDurationTimer = setInterval(() => {
+        if(!callStartTime) return;
+        const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const secs = String(elapsed % 60).padStart(2, '0');
+        const durEl = document.getElementById("callDuration");
+        if(durEl) durEl.textContent = `🔴 লাইভ কল: ${mins}:${secs}`;
+    }, 1000);
+}
+
+function toggleMicrophone(){
+    if(!localMediaStream) return;
+    const audioTrack = localMediaStream.getAudioTracks()[0];
+    if(audioTrack){
+        isAudioMuted = !isAudioMuted;
+        audioTrack.enabled = !isAudioMuted;
+        const btn = document.getElementById("toggleMicBtn");
+        btn.textContent = isAudioMuted ? "🔇" : "🎤";
+        btn.classList.toggle("video-btn-danger", isAudioMuted);
+        btn.classList.toggle("video-btn-active", !isAudioMuted);
+        toast(isAudioMuted ? "মাইক্রোফোন মিউট করা হয়েছে" : "মাইক্রোফোন অন করা হয়েছে");
+    }
+}
+
+function toggleCamera(){
+    if(!localMediaStream) return;
+    const videoTrack = localMediaStream.getVideoTracks()[0];
+    if(videoTrack){
+        isVideoStopped = !isVideoStopped;
+        videoTrack.enabled = !isVideoStopped;
+        const btn = document.getElementById("toggleCamBtn");
+        btn.textContent = isVideoStopped ? "🚫" : "📹";
+        btn.classList.toggle("video-btn-danger", isVideoStopped);
+        btn.classList.toggle("video-btn-active", !isVideoStopped);
+        toast(isVideoStopped ? "ক্যামেরা বন্ধ করা হয়েছে" : "ক্যামেরা চালু করা হয়েছে");
+    }
+}
+
+// অ্যাডমিন কল কাটলে সাথে সাথে সমস্ত সদস্যের লাইন কেটে যাবে
+function endVideoCall(manual = true){
+    if(currentUser && currentUser.role === "ADMIN" && manual){
+        // অ্যাডমিন কাটলে ফায়ারবেসে বন্ধের নির্দেশ পাঠানো হয়
+        if(fbDb){
+            fbDb.ref("samiti_live_call").set({
+                status: "ENDED",
+                endedAt: new Date().toISOString()
+            });
+        }
+    }
+
+    if(currentPeerCall){
+        try { currentPeerCall.close(); } catch(e){}
+        currentPeerCall = null;
+    }
+
+    if(activeCallsList && activeCallsList.length > 0){
+        activeCallsList.forEach(c => {
+            try { c.close(); } catch(e){}
+        });
+        activeCallsList = [];
+    }
+
+    clearInterval(callDurationTimer);
+    callStartTime = null;
+
+    const durEl = document.getElementById("callDuration");
+    if(durEl) durEl.textContent = "কল সংযোগ বিচ্ছিন্ন";
+
+    const remVid = document.getElementById("remoteVideo");
+    if(remVid) remVid.srcObject = null;
+    document.getElementById("remoteVideoTag").textContent = "👥 অপেক্ষমান সদস্য";
+
+    if(manual){
+        toast("ভিডিও কল সমাপ্ত করা হয়েছে।");
+    }
+}
+
+function copyPeerId(){
+    const text = document.getElementById("myPeerIdDisplay").textContent;
+    if(!text || text === "তৈরি হচ্ছে...") return;
+    
+    const tempInput = document.createElement("input");
+    tempInput.value = text;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    try {
+        document.execCommand('copy');
+        toast("📋 ভিডিও আইডি কপি করা হয়েছে!");
+    } catch(err) {
+        toast("কপি করা যায়নি, অনুগ্রহ করে ম্যানুয়ালি কপি করুন।");
+    }
+    document.body.removeChild(tempInput);
+}
+
+function broadcastMeetingRoomId(){
+    const myId = document.getElementById("myPeerIdDisplay").textContent;
+    if(!myId || myId === "তৈরি হচ্ছে...") {
+        toast("ভিডিও আইডি এখনও তৈরি হয়নি!");
+        return;
+    }
+
+    const meetingNotice = `📹 অনলাইন ভিডিও মিটিং আহ্বান! যোগ দিতে আমার ভিডিও আইডি ব্যবহার করুন: [ ${myId} ]`;
+    const newMsg = {
+        id: "MSG-" + Date.now(),
+        channel: "GROUP",
+        senderId: currentUser.id,
+        senderName: currentUser.name,
+        senderRole: currentUser.role === "ADMIN" ? "অ্যাডমিন" : "সদস্য",
+        text: meetingNotice,
+        time: new Date().toISOString()
+    };
+
+    if(!db.chats) db.chats = [];
+    db.chats.push(newMsg);
+    saveDB();
+    toast("গ্রুপ চ্যাটে মিটিং আইডি সফলভাবে প্রচার করা হয়েছে! 🚀");
+}
 
 window.addEventListener("DOMContentLoaded", () => {
     initFirebase(CLOUD_FIREBASE_URL);
@@ -1626,7 +2168,7 @@ function setLoginType(type){
 
 function login(e){
     e.preventDefault();
-    getAudioContext(); // লগইনে ক্লিক করলেই সাউন্ড পারমিশন সক্রিয় হবে
+    getAudioContext();
     const rawId = document.getElementById("loginId").value;
     const rawPass = document.getElementById("loginPassword").value;
 
@@ -1674,19 +2216,46 @@ function startApp(){
     document.getElementById("topUserName").textContent = currentUser.name;
     document.getElementById("roleLabel").textContent = currentUser.role === "ADMIN" ? "Admin Panel" : "Member Portal";
 
+    // অ্যাডমিন ও মেম্বার ভিডিও বোতাম কন্ট্রোল নিয়ন্ত্রণ
+    const adminCallWrap = document.getElementById("adminCallControlWrap");
+    const memberCallWrap = document.getElementById("memberCallControlWrap");
+    if(adminCallWrap && memberCallWrap){
+        if(currentUser.role === "ADMIN"){
+            adminCallWrap.style.display = "flex";
+            memberCallWrap.style.display = "none";
+        } else {
+            adminCallWrap.style.display = "none";
+            memberCallWrap.style.display = "block";
+        }
+    }
+
+    const flashManageBtn = document.getElementById("adminManageFlashBtn");
+    if(flashManageBtn){
+        flashManageBtn.classList.toggle("hidden", currentUser.role !== "ADMIN");
+    }
+
     if(currentUser.role === "ADMIN"){
         showPage("dashboard");
     } else {
         showPage("memberDashboard");
     }
     renderAll();
-    // অ্যাপ খোলার পর শেষ নোটিশ থাকলে পপআপ হবে এবং সাউন্ড বাজবে
     setTimeout(() => {
         checkAndShowLatestFlash(true);
+        initPeerVideoCall();
     }, 400);
 }
 
 function logout(){
+    endVideoCall(false);
+    if(localMediaStream){
+        localMediaStream.getTracks().forEach(t => t.stop());
+        localMediaStream = null;
+    }
+    if(peer){
+        peer.destroy();
+        peer = null;
+    }
     currentUser = null;
     document.getElementById("app").classList.add("hidden");
     document.getElementById("loginScreen").classList.remove("hidden");
@@ -1701,6 +2270,7 @@ function showPage(id, btn){
 
     const titles = {
         dashboard: "📊 ড্যাশবোর্ড",
+        videoPage: "📹 ভিডিও মিটিং ও কল",
         chatPage: "💬 চ্যাট ও নোটিশ",
         members: "👥 মেম্বার খাতা ও পাসওয়ার্ড",
         pendingLoans: "📥 লোনের আবেদনসমূহ",
@@ -1726,6 +2296,11 @@ function showPage(id, btn){
         btn.classList.add("active");
     }
     document.getElementById("sidebar").classList.remove("open");
+
+    if(id === "videoPage"){
+        ensureLocalMediaStream().catch(() => {});
+    }
+
     renderAll();
 }
 
@@ -1750,7 +2325,6 @@ function renderChatChannels(){
     if(!list) return;
     list.innerHTML = "";
 
-    // 1. Group Chat
     const isGroupActive = activeChatChannel === "GROUP";
     list.innerHTML += `
         <div class="chat-channel-item ${isGroupActive ? 'active' : ''}" onclick="selectChatChannel('GROUP')">
@@ -1759,7 +2333,6 @@ function renderChatChannels(){
         </div>
     `;
 
-    // 2. Individual Direct Chats
     if(currentUser.role === "ADMIN"){
         db.members.filter(m => !m.isSettled).forEach(m => {
             const isMActive = activeChatChannel === m.id;
@@ -1820,8 +2393,6 @@ function renderChatMessages(){
     filtered.forEach(msg => {
         const isMe = msg.senderId === currentUser.id;
         const timeStr = new Date(msg.time).toLocaleTimeString("bn-IN", { hour: '2-digit', minute: '2-digit' });
-        
-        // শুধু admin-ই মেসেজ ডিলিট করতে পারবে
         const deleteBtn = isAdmin ? `<button class="chat-del-btn" title="মেসেজ ডিলিট করুন" onclick="deleteChatMessage('${msg.id}')">🗑️</button>` : '';
 
         box.innerHTML += `
@@ -1874,7 +2445,6 @@ function sendChatMessage(e){
     renderChatMessages();
 }
 
-/* অ্যাডমিন মেসেজ ডিলিট করার ফাংশন */
 function deleteChatMessage(msgId){
     if(currentUser.role !== "ADMIN"){
         toast("❌ শুধুমাত্র অ্যাডমিন মেসেজ ডিলিট করতে পারবেন!");
@@ -1888,7 +2458,7 @@ function deleteChatMessage(msgId){
     }
 }
 
-/* FLASH NOTICES LOGIC */
+/* FLASH NOTICES LOGIC & DELETION */
 function openFlashModal(){
     document.getElementById("flashTitle").value = "";
     document.getElementById("flashText").value = "";
@@ -1923,11 +2493,57 @@ function submitFlashNotice(){
     checkAndShowLatestFlash(true);
 }
 
+function openManageFlashModal(){
+    if(currentUser.role !== "ADMIN") return;
+    const tbody = document.getElementById("flashNoticesTableBody");
+    tbody.innerHTML = "";
+
+    const list = db.flashNotices || [];
+    list.slice().reverse().forEach(n => {
+        const timeStr = new Date(n.time).toLocaleString("bn-IN");
+        tbody.innerHTML += `
+            <tr>
+                <td style="font-size:12px;">${timeStr}</td>
+                <td>
+                    <b>${n.title}</b><br>
+                    <small style="color:var(--muted);">${n.text}</small>
+                </td>
+                <td>${n.senderName} (${n.senderRole})</td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="deleteFlashNotice('${n.id}')">🗑️ মুছুন</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    if(list.length === 0){
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:15px;">কোনো সক্রিয় ফ্ল্যাশ নোটিশ নেই।</td></tr>`;
+    }
+
+    document.getElementById("manageFlashModal").classList.add("show");
+}
+
+function deleteFlashNotice(flashId){
+    if(currentUser.role !== "ADMIN"){
+        toast("❌ শুধুমাত্র অ্যাডমিন ফ্ল্যাশ নোটিশ মুছতে পারবেন!");
+        return;
+    }
+    if(confirm("আপনি কি নিশ্চিত এই ফ্ল্যাশ বার্তাটি স্থায়ীভাবে মুছে ফেলতে চান?")){
+        db.flashNotices = (db.flashNotices || []).filter(f => f.id !== flashId);
+        saveDB();
+        openManageFlashModal();
+        dismissFlashMessage();
+        toast("ফ্ল্যাশ বার্তা মুছে ফেলা হয়েছে।");
+    }
+}
+
 function checkAndShowLatestFlash(withSound = false){
-    if(!db.flashNotices || db.flashNotices.length === 0) return;
+    if(!db.flashNotices || db.flashNotices.length === 0) {
+        dismissFlashMessage();
+        return;
+    }
     const latest = db.flashNotices[db.flashNotices.length - 1];
     
-    // Check if dismissed in this session
     if(sessionStorage.getItem("LAST_DISMISSED_FLASH") === latest.id) return;
 
     const banner = document.getElementById("flashBanner");
@@ -2024,6 +2640,16 @@ function loanInterestRemaining(loan){
     return Math.max(0, totalAccrued - paidInterest);
 }
 
+function memberTotalLoanPrincipalRemaining(memberId){
+    const loans = db.loans.filter(l => l.memberId === memberId && l.status === "APPROVED");
+    return loans.reduce((sum, l) => sum + loanPrincipalRemaining(l), 0);
+}
+
+function memberTotalLoanInterestRemaining(memberId){
+    const loans = db.loans.filter(l => l.memberId === memberId && l.status === "APPROVED");
+    return loans.reduce((sum, l) => sum + loanInterestRemaining(l), 0);
+}
+
 function totalSocietyCash(){
     const totalSavings = db.payments
         .filter(p => p.type === "SAVINGS" && p.status === "APPROVED")
@@ -2102,8 +2728,7 @@ function renderAdminDashboard(){
     activeMembers.forEach(m => {
         const due = memberSavingsDue(m);
         const dueMonths = memberDueMonths(m);
-        const memberLoans = activeLoans.filter(l => l.memberId === m.id);
-        const intDue = memberLoans.reduce((s, l) => s + loanInterestRemaining(l), 0);
+        const intDue = memberTotalLoanInterestRemaining(m.id);
 
         totalDue += due;
         totalIntDue += intDue;
@@ -2267,6 +2892,10 @@ function renderPaymentsTable(){
     db.payments.slice().reverse().forEach(p => {
         const m = db.members.find(x => x.id === p.memberId);
         const isSavings = p.type === 'SAVINGS';
+        const receiptHtml = p.receiptImage ? 
+            `<button class="btn btn-secondary btn-sm" onclick="viewReceiptImage('${p.id}')">🖼️ দেখুন</button>` : 
+            `<span style="color:var(--muted); font-size:12px;">নেই</span>`;
+
         tbody.innerHTML += `
             <tr>
                 <td>${new Date(p.date).toLocaleDateString("bn-IN")}</td>
@@ -2274,6 +2903,7 @@ function renderPaymentsTable(){
                 <td><span class="badge ${isSavings?'badge-blue':'badge-warning'}">${formatPaymentType(p.type)}</span></td>
                 <td style="font-weight:bold;">${money(p.amount)}</td>
                 <td>${p.method || 'Cash'} ${p.utr ? `<br><small style="color:gray;">UTR: ${p.utr}</small>` : ''}</td>
+                <td>${receiptHtml}</td>
                 <td><span class="badge ${p.status==='APPROVED'?'badge-success':p.status==='PENDING'?'badge-warning':'badge-danger'}">${p.status}</span></td>
                 <td>
                     <button class="btn btn-secondary btn-sm" onclick="requireActionAuth(()=>openEditPaymentModal('${p.id}'))">✏️ এডিট</button>
@@ -2284,7 +2914,7 @@ function renderPaymentsTable(){
     });
 
     if(db.payments.length === 0){
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;">কোনো পেমেন্ট রেকর্ড নেই</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;">কোনো পেমেন্ট রেকর্ড নেই</td></tr>`;
     }
 }
 
@@ -2295,6 +2925,10 @@ function renderPendingTable(){
     const pending = db.payments.filter(p => p.status === "PENDING");
     pending.forEach(p => {
         const m = db.members.find(x => x.id === p.memberId);
+        const receiptHtml = p.receiptImage ? 
+            `<img src="${p.receiptImage}" class="screenshot-preview-thumb" onclick="viewReceiptImage('${p.id}')" title="ক্লিক করে বড় করে দেখুন">` : 
+            `<span style="color:var(--muted); font-size:12px;">স্ক্রিনশট নেই</span>`;
+
         tbody.innerHTML += `
             <tr>
                 <td>${new Date(p.date).toLocaleDateString("bn-IN")}</td>
@@ -2302,6 +2936,7 @@ function renderPendingTable(){
                 <td><span class="badge badge-warning">${formatPaymentType(p.type)}</span></td>
                 <td style="font-weight:bold; color:#166534;">${money(p.amount)}</td>
                 <td>${p.method} ${p.utr ? `<br><b>UTR:</b> ${p.utr}` : ''}</td>
+                <td>${receiptHtml}</td>
                 <td>
                     <button class="btn btn-success" onclick="requireActionAuth(()=>approvePayment('${p.id}'))">অনুমোদন</button>
                     <button class="btn btn-danger" onclick="requireActionAuth(()=>rejectPayment('${p.id}'))">বাতিল</button>
@@ -2311,7 +2946,7 @@ function renderPendingTable(){
     });
 
     if(pending.length === 0){
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;">কোনো পেমেন্ট পেন্ডিং নেই</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;">কোনো পেমেন্ট পেন্ডিং নেই</td></tr>`;
     }
 }
 
@@ -2347,9 +2982,8 @@ function renderMemberDashboard(){
     const savings = memberSavings(m.id);
     const due = memberSavingsDue(m);
     const dueMonths = memberDueMonths(m);
-    const loans = db.loans.filter(l => l.memberId === m.id && l.status === "APPROVED");
-    const pRemaining = loans.reduce((s, l) => s + loanPrincipalRemaining(l), 0);
-    const iRemaining = loans.reduce((s, l) => s + loanInterestRemaining(l), 0);
+    const pRemaining = memberTotalLoanPrincipalRemaining(m.id);
+    const iRemaining = memberTotalLoanInterestRemaining(m.id);
 
     document.getElementById("mySavings").textContent = money(savings);
     document.getElementById("myDue").textContent = money(due);
@@ -2383,7 +3017,7 @@ function renderMemberDashboard(){
     document.getElementById("mBoxInterestDue").textContent = money(iRemaining);
 }
 
-/* ================= DYNAMIC QR CODE LOGIC ================= */
+/* ================= DYNAMIC QR CODE & PAYMENT SELECTION ================= */
 function renderMemberPaymentPortal(){
     document.getElementById("portalUpiIdText").textContent = db.settings.upiId || "সেট করা নেই";
     onMemberPaymentTypeChange();
@@ -2397,63 +3031,47 @@ function onMemberPaymentTypeChange(){
     const loanDiv = document.getElementById("loanSelectionDiv");
     const amountInput = document.getElementById("mPayAmount");
     const autoNotice = document.getElementById("mPayAutoNotice");
+    const loanInfo = document.getElementById("mCombinedLoanInfo");
 
     const loans = db.loans.filter(l => l.memberId === currentUser.id && l.status === "APPROVED");
-    const select = document.getElementById("mPayLoanSelect");
-    select.innerHTML = "";
+    const totalPrincipal = memberTotalLoanPrincipalRemaining(currentUser.id);
+    const totalInterest = memberTotalLoanInterestRemaining(currentUser.id);
 
     if(type === "SAVINGS"){
-        loanDiv.classList.add("hidden");
+        loanDiv.style.display = "none";
         const due = memberSavingsDue(m);
         amountInput.value = due > 0 ? due : (db.settings.monthlyDeposit || 1000);
         amountInput.readOnly = true;
         autoNotice.style.display = "block";
         autoNotice.textContent = "✨ আপনার বকেয়া সঞ্চয় অনুযায়ী টাকার পরিমাণ স্বয়ংক্রিয়ভাবে নির্ধারণ করা হয়েছে।";
     } else if(type === "LOAN_INTEREST"){
-        loanDiv.classList.remove("hidden");
+        loanDiv.style.display = "block";
         if(loans.length === 0){
-            select.innerHTML = `<option value="">কোনো লোন সক্রিয় নেই</option>`;
+            loanInfo.innerHTML = "আপনার কোনো সক্রিয় লোন নেই।";
             amountInput.value = 0;
             amountInput.readOnly = true;
         } else {
-            loans.forEach(l => {
-                select.innerHTML += `<option value="${l.id}">Loan ${l.id} [বাকি সুদ: ${money(loanInterestRemaining(l))}]</option>`;
-            });
-            const selLoan = loans[0];
-            const intDue = loanInterestRemaining(selLoan);
-            amountInput.value = intDue;
+            loanInfo.innerHTML = `মোট লোন সংখ্যা: <b>${loans.length} টি</b> | সকল লোন মিলে মোট বকেয়া সুদ: <b style="color:var(--warning);">${money(totalInterest)}</b>`;
+            amountInput.value = totalInterest;
             amountInput.readOnly = true;
         }
         autoNotice.style.display = "block";
-        autoNotice.textContent = "✨ আপনার লোনের বকেয়া সুদ অনুযায়ী টাকার পরিমাণ স্বয়ংক্রিয়ভাবে নির্ধারণ করা হয়েছে।";
+        autoNotice.textContent = "✨ আপনার সকল লোনের মোট বকেয়া সুদ একত্রে স্বয়ংক্রিয়ভাবে নির্ধারণ করা হয়েছে।";
     } else if(type === "LOAN_PRINCIPAL"){
-        loanDiv.classList.remove("hidden");
+        loanDiv.style.display = "block";
         if(loans.length === 0){
-            select.innerHTML = `<option value="">কোনো লোন সক্রিয় নেই</option>`;
+            loanInfo.innerHTML = "আপনার কোনো সক্রিয় লোন নেই।";
             amountInput.value = 0;
+            amountInput.readOnly = true;
         } else {
-            loans.forEach(l => {
-                select.innerHTML += `<option value="${l.id}">Loan ${l.id} [বাকি আসল: ${money(loanPrincipalRemaining(l))}]</option>`;
-            });
-            amountInput.value = "";
+            loanInfo.innerHTML = `মোট লোন সংখ্যা: <b>${loans.length} টি</b> | সকল লোন মিলে মোট বাকি আসল: <b style="color:var(--primary);">${money(totalPrincipal)}</b>`;
+            amountInput.value = totalPrincipal;
+            amountInput.readOnly = false;
         }
-        amountInput.readOnly = false;
-        amountInput.placeholder = "যত টাকা আসল পরিশোধ করতে চান লিখুন";
-        autoNotice.style.display = "none";
+        autoNotice.style.display = "block";
+        autoNotice.textContent = "✨ আপনার সকল লোনের মোট বাকি আসল একত্রে স্বয়ংক্রিয়ভাবে দেখানো হয়েছে। আপনি চাইলে আংশিক বা পুরোটা একবারে দিতে পারেন।";
     }
 
-    updateMemberDynamicQr();
-}
-
-function onMemberLoanSelectChange(){
-    const type = document.getElementById("mPayType").value;
-    const loanId = document.getElementById("mPayLoanSelect").value;
-    const loan = db.loans.find(l => l.id === loanId);
-    const amountInput = document.getElementById("mPayAmount");
-
-    if(loan && type === "LOAN_INTEREST"){
-        amountInput.value = loanInterestRemaining(loan);
-    }
     updateMemberDynamicQr();
 }
 
@@ -2495,6 +3113,57 @@ function updateMemberDynamicQr(){
     }
 }
 
+/* হ্যান্ডেল রিসিপ্ট আপলোড (ইমেজ কম্প্রেশন সহ) */
+function handleReceiptUpload(e){
+    const file = e.target.files[0];
+    if(!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(evt){
+        const img = new Image();
+        img.onload = function(){
+            const canvas = document.createElement("canvas");
+            let width = img.width;
+            let height = img.height;
+            const maxDim = 800;
+
+            if(width > height && width > maxDim){
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+            } else if(height > maxDim){
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+
+            uploadedReceiptBase64 = canvas.toDataURL("image/jpeg", 0.75);
+
+            document.getElementById("receiptPreviewImg").src = uploadedReceiptBase64;
+            document.getElementById("receiptPreviewBox").style.display = "block";
+        };
+        img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function viewReceiptImage(paymentId){
+    const p = db.payments.find(x => x.id === paymentId);
+    if(!p || !p.receiptImage){
+        toast("কোনো স্ক্রিনশট পাওয়া যায়নি!");
+        return;
+    }
+    const target = document.getElementById("imageViewerTarget");
+    const dlBtn = document.getElementById("downloadReceiptBtn");
+
+    target.src = p.receiptImage;
+    dlBtn.href = p.receiptImage;
+    document.getElementById("imageViewerModal").classList.add("show");
+}
+
 function renderAllMemberDues(){
     const tbody = document.getElementById("memberDueAlertTable");
     tbody.innerHTML = "";
@@ -2502,8 +3171,7 @@ function renderAllMemberDues(){
     db.members.filter(m => !m.isSettled).forEach(m => {
         const due = memberSavingsDue(m);
         const dueMonths = memberDueMonths(m);
-        const memberLoans = db.loans.filter(l => l.memberId === m.id && l.status === "APPROVED");
-        const intDue = memberLoans.reduce((s, l) => s + loanInterestRemaining(l), 0);
+        const intDue = memberTotalLoanInterestRemaining(m.id);
 
         tbody.innerHTML += `
             <tr>
@@ -2524,19 +3192,24 @@ function renderMemberHistory(){
 
     const myPayments = db.payments.filter(p => p.memberId === currentUser.id).reverse();
     myPayments.forEach(p => {
+        const receiptHtml = p.receiptImage ? 
+            `<button class="btn btn-secondary btn-sm" onclick="viewReceiptImage('${p.id}')">🖼️ দেখুন</button>` : 
+            `<span style="color:var(--muted); font-size:12px;">নেই</span>`;
+
         tbody.innerHTML += `
             <tr>
                 <td>${new Date(p.date).toLocaleDateString("bn-IN")}</td>
                 <td>${formatPaymentType(p.type)}</td>
                 <td style="font-weight:bold;">${money(p.amount)}</td>
                 <td>${p.method || 'Cash'} ${p.utr ? `<br><small>UTR: ${p.utr}</small>` : ''}</td>
+                <td>${receiptHtml}</td>
                 <td><span class="badge ${p.status==='APPROVED'?'badge-success':p.status==='PENDING'?'badge-warning':'badge-danger'}">${p.status}</span></td>
             </tr>
         `;
     });
 
     if(myPayments.length === 0){
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;">কোনো পেমেন্ট হিস্ট্রি নেই</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;">কোনো পেমেন্ট হিস্ট্রি নেই</td></tr>`;
     }
 }
 
@@ -2763,9 +3436,8 @@ function openSettleModal(id){
     let equityRatio = combinedTotalSavings > 0 ? (mTotalSavings / combinedTotalSavings) : 0;
     let memberProfitShare = netProfitPool * equityRatio;
 
-    const memberLoans = db.loans.filter(l => l.memberId === m.id && l.status === "APPROVED");
-    const pRemaining = memberLoans.reduce((s, l) => s + loanPrincipalRemaining(l), 0);
-    const iRemaining = memberLoans.reduce((s, l) => s + loanInterestRemaining(l), 0);
+    const pRemaining = memberTotalLoanPrincipalRemaining(m.id);
+    const iRemaining = memberTotalLoanInterestRemaining(m.id);
     const totalLoanObligation = pRemaining + iRemaining;
 
     const netFinalPayable = (mTotalSavings + memberProfitShare) - totalLoanObligation;
@@ -2898,7 +3570,68 @@ function saveLoan(){
     toast("লোন বিতরণ সফল হয়েছে!");
 }
 
-/* ================= PAYMENTS & EDIT FUNCTIONALITY ================= */
+/* ================= PAYMENTS ENGINE ================= */
+function distributeConsolidatedLoanPayment(memberId, totalAmount, type, method, utr, status = "APPROVED", receiptImage = ""){
+    const memberLoans = db.loans.filter(l => l.memberId === memberId && l.status === "APPROVED");
+    let remainingAmount = totalAmount;
+
+    memberLoans.forEach((loan, index) => {
+        if(remainingAmount <= 0) return;
+
+        let portion = 0;
+        if(type === "LOAN_INTEREST"){
+            const dueInt = loanInterestRemaining(loan);
+            if(dueInt > 0){
+                portion = Math.min(remainingAmount, dueInt);
+            }
+        } else if(type === "LOAN_PRINCIPAL"){
+            const duePrin = loanPrincipalRemaining(loan);
+            if(duePrin > 0){
+                portion = Math.min(remainingAmount, duePrin);
+            }
+        }
+
+        if(index === memberLoans.length - 1 && remainingAmount > 0 && portion === 0){
+            portion = remainingAmount;
+        }
+
+        if(portion > 0){
+            db.payments.push({
+                id: "PAY-" + Date.now() + "-" + Math.floor(Math.random()*1000),
+                memberId: memberId,
+                type: type,
+                loanId: loan.id,
+                amount: portion,
+                principalAmount: type === "LOAN_PRINCIPAL" ? portion : 0,
+                interestAmount: type === "LOAN_INTEREST" ? portion : 0,
+                method: method,
+                utr: utr,
+                receiptImage: receiptImage || "",
+                status: status,
+                date: new Date().toISOString()
+            });
+            remainingAmount -= portion;
+        }
+    });
+
+    if(remainingAmount > 0){
+        db.payments.push({
+            id: "PAY-" + Date.now() + "-" + Math.floor(Math.random()*1000),
+            memberId: memberId,
+            type: type,
+            loanId: memberLoans[0] ? memberLoans[0].id : null,
+            amount: remainingAmount,
+            principalAmount: type === "LOAN_PRINCIPAL" ? remainingAmount : 0,
+            interestAmount: type === "LOAN_INTEREST" ? remainingAmount : 0,
+            method: method,
+            utr: utr,
+            receiptImage: receiptImage || "",
+            status: status,
+            date: new Date().toISOString()
+        });
+    }
+}
+
 function openPaymentModal(){
     const select = document.getElementById("payMemberSelect");
     select.innerHTML = "";
@@ -2917,9 +3650,8 @@ function onAdminSelectPayMember(){
     if(!m) return;
 
     const due = memberSavingsDue(m);
-    const memberLoans = db.loans.filter(l => l.memberId === m.id && l.status === "APPROVED");
-    const pRemaining = memberLoans.reduce((s, l) => s + loanPrincipalRemaining(l), 0);
-    const iRemaining = memberLoans.reduce((s, l) => s + loanInterestRemaining(l), 0);
+    const pRemaining = memberTotalLoanPrincipalRemaining(m.id);
+    const iRemaining = memberTotalLoanInterestRemaining(m.id);
 
     document.getElementById("admBoxSavingsDue").textContent = money(due);
     document.getElementById("admBoxLoanPrincipal").textContent = money(pRemaining);
@@ -2930,29 +3662,6 @@ function onAdminSelectPayMember(){
 
 function toggleAdminLoanField(){
     const type = document.getElementById("payTypeSelect").value;
-    const div = document.getElementById("adminLoanSelectDiv");
-    const memberId = document.getElementById("payMemberSelect").value;
-
-    if(type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL"){
-        div.classList.remove("hidden");
-        const select = document.getElementById("adminPayLoanSelect");
-        select.innerHTML = "";
-        const loans = db.loans.filter(l => l.memberId === memberId && l.status === "APPROVED");
-        if(loans.length === 0){
-            select.innerHTML = `<option value="">কোনো সক্রিয় লোন নেই</option>`;
-        } else {
-            loans.forEach(l => {
-                select.innerHTML += `<option value="${l.id}">Loan ${l.id} [বাকি আসল: ${money(loanPrincipalRemaining(l))}, বাকি সুদ: ${money(loanInterestRemaining(l))}]</option>`;
-            });
-        }
-    } else {
-        div.classList.add("hidden");
-    }
-    updateAdminLoanDueAmount();
-}
-
-function updateAdminLoanDueAmount(){
-    const type = document.getElementById("payTypeSelect").value;
     const memberId = document.getElementById("payMemberSelect").value;
     const m = db.members.find(x => x.id === memberId);
     if(!m) return;
@@ -2960,11 +3669,9 @@ function updateAdminLoanDueAmount(){
     if(type === "SAVINGS"){
         document.getElementById("payAmount").value = memberSavingsDue(m);
     } else if(type === "LOAN_INTEREST"){
-        const loanId = document.getElementById("adminPayLoanSelect").value;
-        const loan = db.loans.find(l => l.id === loanId);
-        if(loan){
-            document.getElementById("payAmount").value = loanInterestRemaining(loan);
-        }
+        document.getElementById("payAmount").value = memberTotalLoanInterestRemaining(m.id);
+    } else if(type === "LOAN_PRINCIPAL"){
+        document.getElementById("payAmount").value = memberTotalLoanPrincipalRemaining(m.id);
     }
 }
 
@@ -2973,35 +3680,40 @@ function saveAdminPayment(){
     const type = document.getElementById("payTypeSelect").value;
     const amount = Number(document.getElementById("payAmount").value);
     const method = document.getElementById("payMethod").value;
-    const loanId = (type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL") ? document.getElementById("adminPayLoanSelect").value : null;
 
     if(!amount || amount <= 0) {
         toast("সঠিক টাকার পরিমাণ দিন!");
         return;
     }
 
-    if((type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL") && !loanId){
+    const memberLoans = db.loans.filter(l => l.memberId === memberId && l.status === "APPROVED");
+    if((type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL") && memberLoans.length === 0){
         toast("সদস্যের কোনো সক্রিয় লোন অ্যাকাউন্ট নেই!");
         return;
     }
 
-    db.payments.push({
-        id: "PAY-" + Date.now(),
-        memberId,
-        type,
-        loanId,
-        amount,
-        principalAmount: type === "LOAN_PRINCIPAL" ? amount : 0,
-        interestAmount: type === "LOAN_INTEREST" ? amount : 0,
-        method,
-        status: "APPROVED",
-        date: new Date().toISOString()
-    });
+    if(type === "SAVINGS"){
+        db.payments.push({
+            id: "PAY-" + Date.now(),
+            memberId,
+            type,
+            loanId: null,
+            amount,
+            principalAmount: 0,
+            interestAmount: 0,
+            method,
+            receiptImage: "",
+            status: "APPROVED",
+            date: new Date().toISOString()
+        });
+    } else {
+        distributeConsolidatedLoanPayment(memberId, amount, type, method, "", "APPROVED", "");
+    }
 
     saveDB();
     closeModal("paymentModal");
     renderAll();
-    toast("পেমেন্ট সফলভাবে জমা ও মাইনাস হয়েছে!");
+    toast("পেমেন্ট সফলভাবে জমা ও সমন্বয় হয়েছে!");
 }
 
 /* --- পেমেন্ট এডিট ও ডিলিট অপশন --- */
@@ -3025,36 +3737,7 @@ function openEditPaymentModal(paymentId){
     document.getElementById("editPayMethod").value = p.method || "Cash";
     document.getElementById("editPayUtr").value = p.utr || "";
 
-    toggleEditPaymentLoanField(p.loanId);
-
     document.getElementById("editPaymentModal").classList.add("show");
-}
-
-function onEditPayMemberChanged(){
-    toggleEditPaymentLoanField();
-}
-
-function toggleEditPaymentLoanField(preferredLoanId){
-    const type = document.getElementById("editPayTypeSelect").value;
-    const div = document.getElementById("editPayLoanDiv");
-    const memberId = document.getElementById("editPayMemberSelect").value;
-
-    if(type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL"){
-        div.classList.remove("hidden");
-        const select = document.getElementById("editPayLoanSelect");
-        select.innerHTML = "";
-        const loans = db.loans.filter(l => l.memberId === memberId && l.status === "APPROVED");
-        if(loans.length === 0){
-            select.innerHTML = `<option value="">কোনো লোন অ্যাকাউন্ট নেই</option>`;
-        } else {
-            loans.forEach(l => {
-                const isSel = preferredLoanId && preferredLoanId === l.id;
-                select.innerHTML += `<option value="${l.id}" ${isSel ? 'selected' : ''}>Loan ${l.id}</option>`;
-            });
-        }
-    } else {
-        div.classList.add("hidden");
-    }
 }
 
 function saveEditedPayment(){
@@ -3068,7 +3751,6 @@ function saveEditedPayment(){
     const dateStr = document.getElementById("editPayDate").value;
     const method = document.getElementById("editPayMethod").value;
     const utr = document.getElementById("editPayUtr").value.trim();
-    const loanId = (type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL") ? document.getElementById("editPayLoanSelect").value : null;
 
     if(!amount || amount <= 0){
         toast("সঠিক টাকার পরিমাণ দিন");
@@ -3077,7 +3759,6 @@ function saveEditedPayment(){
 
     p.memberId = memberId;
     p.type = type;
-    p.loanId = loanId;
     p.amount = amount;
     p.principalAmount = type === "LOAN_PRINCIPAL" ? amount : 0;
     p.interestAmount = type === "LOAN_INTEREST" ? amount : 0;
@@ -3108,14 +3789,14 @@ function submitMemberPayment(){
     const amount = Number(document.getElementById("mPayAmount").value);
     const method = document.getElementById("mPayMethod").value;
     const utr = document.getElementById("mPayUtr").value.trim();
-    const loanId = (type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL") ? document.getElementById("mPayLoanSelect").value : null;
 
     if(!amount || amount <= 0){
         toast("টাকার সঠিক পরিমাণ লিখুন বা সিলেক্ট করুন");
         return;
     }
 
-    if((type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL") && !loanId){
+    const memberLoans = db.loans.filter(l => l.memberId === currentUser.id && l.status === "APPROVED");
+    if((type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL") && memberLoans.length === 0){
         toast("কোনো সক্রিয় লোন অ্যাকাউন্ট পাওয়া যায়নি!");
         return;
     }
@@ -3124,29 +3805,40 @@ function submitMemberPayment(){
         id: "PAY-" + Date.now(),
         memberId: currentUser.id,
         type,
-        loanId,
+        loanId: "CONSOLIDATED",
         amount,
         principalAmount: type === "LOAN_PRINCIPAL" ? amount : 0,
         interestAmount: type === "LOAN_INTEREST" ? amount : 0,
         method,
         utr,
+        receiptImage: uploadedReceiptBase64 || "",
         status: "PENDING",
         date: new Date().toISOString()
     });
 
     saveDB();
     document.getElementById("mPayUtr").value = "";
-    toast("পেমেন্ট সাবমিট করা হয়েছে! অ্যাডমিন অনুমোদন করলেই ডিউ কমে যাবে।");
+    document.getElementById("mPayReceiptFile").value = "";
+    document.getElementById("receiptPreviewBox").style.display = "none";
+    uploadedReceiptBase64 = "";
+
+    toast("পেমেন্ট ও স্ক্রিনশট সফলভাবে সাবমিট হয়েছে! অ্যাডমিন অনুমোদনের অপেক্ষা করুন।");
     renderAll();
 }
 
 function approvePayment(id){
     const p = db.payments.find(x => x.id === id);
     if(p){
-        p.status = "APPROVED";
+        if(p.loanId === "CONSOLIDATED" && (p.type === "LOAN_INTEREST" || p.type === "LOAN_PRINCIPAL")){
+            const receiptImg = p.receiptImage || "";
+            db.payments = db.payments.filter(item => item.id !== id);
+            distributeConsolidatedLoanPayment(p.memberId, p.amount, p.type, p.method, p.utr, "APPROVED", receiptImg);
+        } else {
+            p.status = "APPROVED";
+        }
         saveDB();
         renderAll();
-        toast("পেমেন্ট অনুমোদন সফল! সংশ্লিষ্ট ডিউ ও সুদ আপডেট হয়েছে।");
+        toast("পেমেন্ট অনুমোদন সফল! সংশ্লিষ্ট সমস্ত লোন ডিউ ও সুদ স্বয়ংক্রিয়ভাবে আপডেট হয়েছে।");
     }
 }
 
@@ -3251,6 +3943,7 @@ function resetAllTransactionsData(){
                 principalAmount: 0,
                 interestAmount: 0,
                 method: "Cash",
+                receiptImage: "",
                 status: "APPROVED",
                 date: new Date(m.joiningDate || db.settings.samitiStartDate || "2025-07-05").toISOString()
             });
