@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>জেরক্স সমিতি - ডিজিটাল পরিচালন পোর্টাল ও ভিডিও মিটিং</title>
+<title>জেরক্স সমিতি - ডিজিটাল পরিচালন পোর্টাল, ব্যালেন্স শিট ও ভিডিও মিটিং</title>
 
 <!-- Firebase Realtime DB SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -331,6 +331,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 .badge-danger{ background:#fee2e2; color:#991b1b; }
 .badge-warning{ background:#fef3c7; color:#92400e; }
 .badge-blue{ background:#ffedd5; color:#c2410c; }
+.badge-purple{ background:#f3e8ff; color:#7e22ce; }
 
 .due-summary-box{
     background: #fff7ed;
@@ -598,7 +599,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     transform: scale(1.05);
 }
 
-/* ================= VIDEO CALL & CONFERENCE STYLES ================= */
+/* VIDEO CALL & CONFERENCE STYLES */
 .video-grid-container{
     display:grid;
     grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
@@ -678,6 +679,28 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     color:white;
 }
 
+/* STATEMENT PRINTABLE STYLES */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #printableStatement, #printableStatement * {
+        visibility: visible;
+    }
+    #printableStatement {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        background: white;
+    }
+    .no-print {
+        display: none !important;
+    }
+}
+
 @media(max-width:768px){
     .sidebar{ transform:translateX(-100%); transition:.25s; }
     .sidebar.open{ transform:translateX(0); }
@@ -740,6 +763,8 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 
         <div class="nav" id="adminNav">
             <button class="active" onclick="showPage('dashboard',this)">📊 ড্যাশবোর্ড</button>
+            <button onclick="showPage('balanceSheetPage',this)">📑 মাসিক ব্যালেন্স শিট</button>
+            <button onclick="showPage('adminStatementPage',this)">📜 মেম্বার স্টেটমেন্ট</button>
             <button onclick="showPage('videoPage',this)">📹 ভিডিও মিটিং / কল</button>
             <button onclick="showPage('chatPage',this)">💬 চ্যাট ও ফ্ল্যাশ নোটিশ</button>
             <button onclick="showPage('members',this)">👥 মেম্বার খাতা ও পাসওয়ার্ড</button>
@@ -755,6 +780,8 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 
         <div class="nav hidden" id="memberNav">
             <button class="active" onclick="showPage('memberDashboard',this)">🏠 আমার ড্যাশবোর্ড</button>
+            <button onclick="showPage('balanceSheetPage',this)">📑 মাসিক ব্যালেন্স শিট</button>
+            <button onclick="showPage('memberStatementPage',this)">📄 আমার স্টেটমেন্ট</button>
             <button onclick="showPage('videoPage',this)">📹 ভিডিও মিটিং / কল</button>
             <button onclick="showPage('chatPage',this)">💬 চ্যাট ও ফ্ল্যাশ নোটিশ</button>
             <button onclick="showPage('memberLoanApply',this)">🏦 লোনের আবেদন করুন</button>
@@ -812,8 +839,8 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
 
                 <div class="card" style="margin-bottom:20px;">
                     <div class="section-title">
-                        <h3 style="color:#991b1b;">🚨 জরুরি রেড অ্যালার্ট ও বকেয়া তালিকা</h3>
-                        <small style="color:var(--muted)">যাদের বকেয়া আছে তাদের দ্রুত সতর্কবার্তা দিন</small>
+                        <h3 style="color:#991b1b;">🚨 জরুরি রেড অ্যালার্ট ও ৩ মাসের বেশি বকেয়া তালিকা</h3>
+                        <small style="color:var(--muted)">যাদের ৩ মাসের বেশি বকেয়া হয়েছে তাদের উপর অ্যাডমিন জরিমানা ধার্য করতে পারবেন</small>
                     </div>
                     <div class="table-wrap">
                         <table>
@@ -824,12 +851,105 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                                     <th>বকেয়া সঞ্চয়</th>
                                     <th>কত মাসের ডিউ</th>
                                     <th>বাকি সুদ</th>
-                                    <th>সরাসরি নোটিশ</th>
+                                    <th>বকেয়া ফাইন</th>
+                                    <th>ফাইন ও অ্যাকশন</th>
                                 </tr>
                             </thead>
                             <tbody id="dueAlertSummaryTable"></tbody>
                         </table>
                     </div>
+                </div>
+            </section>
+
+            <!-- MONTHLY BALANCE SHEET (প্রতি মাসের ব্যালেন্স শিট) -->
+            <section id="balanceSheetPage" class="page">
+                <div class="section-title">
+                    <h2>📑 প্রতি মাসের পূর্ণাঙ্গ ব্যালেন্স শিট</h2>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <label style="font-weight:bold; color:#7c2d12;">মাস ও বছর:</label>
+                        <input type="month" id="balanceSheetMonthInput" onchange="renderMonthlyBalanceSheet()" style="width:auto; padding:6px 12px;">
+                        <button class="btn btn-secondary btn-sm" onclick="printElement('balanceSheetPrintArea')">🖨️ শিট প্রিন্ট করুন</button>
+                    </div>
+                </div>
+
+                <div id="balanceSheetPrintArea">
+                    <div class="cards">
+                        <div class="card stat-card" style="border-left:4px solid #16a34a;">
+                            <div class="stat-title">মাসে মোট সঞ্চয় জমা</div>
+                            <div class="stat-value" id="bsTotalSavings" style="color:#166534;">₹0</div>
+                        </div>
+                        <div class="card stat-card" style="border-left:4px solid #2563eb;">
+                            <div class="stat-title">মাসে মোট লোন আসল ফেরত</div>
+                            <div class="stat-value" id="bsTotalPrincipal" style="color:#1d4ed8;">₹0</div>
+                        </div>
+                        <div class="card stat-card" style="border-left:4px solid #d97706;">
+                            <div class="stat-title">মাসে মোট অর্জিত সুদ</div>
+                            <div class="stat-value" id="bsTotalInterest" style="color:#b45309;">₹0</div>
+                        </div>
+                        <div class="card stat-card" style="border-left:4px solid #9333ea;">
+                            <div class="stat-title">মাসে সংগৃহীত ফাইন</div>
+                            <div class="stat-value" id="bsTotalFine" style="color:#7e22ce;">₹0</div>
+                        </div>
+                        <div class="card stat-card" style="border-left:4px solid #ea580c; background:#fff7ed;">
+                            <div class="stat-title">এই মাসের সর্বমোট কালেকশন</div>
+                            <div class="stat-value" id="bsGrandTotal" style="color:#c2410c;">₹0</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <h3 id="bsMonthTitle" style="color:#7c2d12;">সদস্যভিত্তিক জমার খতিয়ান</h3>
+                            <small id="bsMonthMeta" style="color:var(--muted);"></small>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>সদস্য আইডি</th>
+                                        <th>সদস্যের নাম</th>
+                                        <th>সঞ্চয় জমা (₹)</th>
+                                        <th>লোনের আসল (₹)</th>
+                                        <th>লোনের সুদ (₹)</th>
+                                        <th>ফাইন/চার্জ (₹)</th>
+                                        <th>মোট প্রদান (₹)</th>
+                                        <th>পেমেন্ট মেথড</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="balanceSheetTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ADMIN VIEW MEMBER STATEMENT -->
+            <section id="adminStatementPage" class="page">
+                <div class="section-title">
+                    <h2>📜 মেম্বার অ্যাকাউন্ট স্টেটমেন্ট (অ্যাডমিন ভিউ)</h2>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <select id="adminStatementMemberSelect" onchange="renderAdminSelectedStatement()" style="width:250px;">
+                            <option value="">সদস্য নির্বাচন করুন...</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm" onclick="printElement('adminStatementPrintArea')">🖨️ স্টেটমেন্ট প্রিন্ট / PDF</button>
+                    </div>
+                </div>
+
+                <div id="adminStatementPrintArea" class="card" style="min-height:300px;">
+                    <div id="adminStatementContent">
+                        <p style="text-align:center; color:var(--muted); padding:30px;">অনুগ্রহ করে উপর থেকে একজন সদস্য নির্বাচন করুন তার পূর্ণ খতিয়ান দেখতে।</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MEMBER PERSONAL STATEMENT -->
+            <section id="memberStatementPage" class="page">
+                <div class="section-title">
+                    <h2>📄 আমার পূর্ণাঙ্গ অ্যাকাউন্ট স্টেটমেন্ট</h2>
+                    <button class="btn btn-primary" onclick="printElement('memberStatementPrintArea')">🖨️ স্টেটমেন্ট প্রিন্ট / PDF</button>
+                </div>
+
+                <div id="memberStatementPrintArea" class="card">
+                    <div id="memberPersonalStatementContent"></div>
                 </div>
             </section>
 
@@ -850,7 +970,6 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                             </div>
                         </div>
 
-                        <!-- শুধুমাত্র অ্যাডমিন সমস্ত মেম্বারকে একসাথে কল করতে পারবেন -->
                         <div id="adminCallControlWrap" style="display:none; gap:10px; align-items:center; flex-wrap:wrap;">
                             <button class="btn btn-primary" onclick="adminCallAllMembers()">📢 সকল সদস্যকে একসঙ্গে কল করুন</button>
                             <input id="remotePeerIdInput" placeholder="নির্দিষ্ট সদস্য আইডি (ঐচ্ছিক)" style="width:200px;">
@@ -864,7 +983,6 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                     </div>
                 </div>
 
-                <!-- Video Meeting Stream Grid -->
                 <div class="card" style="background:#291207; color:white; border:2px solid #7c2d12;">
                     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #431407; padding-bottom:10px;">
                         <h4 style="color:#fed7aa;">🎥 লাইভ ভিডিও স্ক্রিন</h4>
@@ -872,32 +990,21 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                     </div>
 
                     <div class="video-grid-container" id="videoGridContainer">
-                        <!-- Local Video -->
                         <div class="video-tile local">
                             <video id="localVideo" autoplay muted playsinline></video>
                             <div class="video-tag" id="localVideoTag">👤 আমি (স্থানীয়)</div>
                         </div>
-                        <!-- Remote Video -->
                         <div class="video-tile">
                             <video id="remoteVideo" autoplay playsinline></video>
                             <div class="video-tag" id="remoteVideoTag">👥 অপেক্ষমান সদস্য</div>
                         </div>
                     </div>
 
-                    <!-- Call Media Controls -->
                     <div class="video-controls">
-                        <button id="toggleMicBtn" class="video-btn video-btn-active" onclick="toggleMicrophone()" title="মাইক মিউট/আনমিউট">
-                            🎤
-                        </button>
-                        <button id="toggleCamBtn" class="video-btn video-btn-active" onclick="toggleCamera()" title="ক্যামেরা অন/অফ">
-                            📹
-                        </button>
-                        <button id="endCallBtn" class="video-btn video-btn-danger" onclick="endVideoCall(true)" title="কল শেষ করুন">
-                            📵
-                        </button>
-                        <button class="btn btn-gold btn-sm" onclick="broadcastMeetingRoomId()" title="গ্রুপে ভিডিও লিংক পাঠান">
-                            📢 চ্যাটে মিটিং আইডি পাঠান
-                        </button>
+                        <button id="toggleMicBtn" class="video-btn video-btn-active" onclick="toggleMicrophone()" title="মাইক মিউট/আনমিউট">🎤</button>
+                        <button id="toggleCamBtn" class="video-btn video-btn-active" onclick="toggleCamera()" title="ক্যামেরা অন/অফ">📹</button>
+                        <button id="endCallBtn" class="video-btn video-btn-danger" onclick="endVideoCall(true)" title="কল শেষ করুন">📵</button>
+                        <button class="btn btn-gold btn-sm" onclick="broadcastMeetingRoomId()" title="গ্রুপে ভিডিও লিংক পাঠান">📢 চ্যাটে মিটিং আইডি পাঠান</button>
                     </div>
                 </div>
             </section>
@@ -1228,6 +1335,11 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                 </div>
 
                 <div class="card" style="max-width:550px;">
+                    <div id="loanAvailableBalanceBox" style="background:#f0fdf4;border:2px solid #bbf7d0;border-radius:14px;padding:14px 16px;margin-bottom:16px;">
+                        <div style="font-size:13px;font-weight:700;color:#166534;">💰 লোন দেওয়ার জন্য বর্তমানে সমিতিতে লভ্য ব্যালেন্স</div>
+                        <div id="loanAvailableBalance" style="font-size:26px;font-weight:900;color:#166534;margin-top:4px;">₹0</div>
+                        <small style="display:block;margin-top:4px;color:#15803d;">সমিতির অনুমোদিত সঞ্চয়/ফেরত/ফাইন, দেওয়া লোন ও খরচের হিসাব অনুযায়ী বর্তমান নেট ব্যালেন্স।</small>
+                    </div>
                     <div class="form-group">
                         <label>প্রয়োজনীয় লোনের পরিমাণ (₹)</label>
                         <input id="applyLoanAmount" type="number" min="500" placeholder="উদাঃ 10000" required>
@@ -1272,6 +1384,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                             <div><span>📌 সঞ্চয় বকেয়া (Savings Due):</span> <b id="mBoxSavingsDue" style="color:var(--danger)">₹0</b></div>
                             <div><span>📌 লোনের মোট বাকি আসল (Principal):</span> <b id="mBoxLoanPrincipal" style="color:var(--dark)">₹0</b></div>
                             <div><span>📌 মোট বকেয়া সুদ (Interest Due):</span> <b id="mBoxInterestDue" style="color:var(--warning)">₹0</b></div>
+                            <div><span>📌 বকেয়া জরিমানা/ফাইন (Fine Due):</span> <b id="mBoxFineDue" style="color:var(--danger)">₹0</b></div>
                         </div>
 
                         <div class="form-group">
@@ -1280,6 +1393,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                                 <option value="SAVINGS">মাসিক সঞ্চয় জমা (অটোমেটিক ডিউ)</option>
                                 <option value="LOAN_INTEREST">সকল লোনের একত্র বকেয়া সুদ পরিশোধ (অটোমেটিক ক্যালকুলেশন)</option>
                                 <option value="LOAN_PRINCIPAL">লোনের আসল পরিশোধ (সকল লোন একত্রে বা আংশিক)</option>
+                                <option value="FINE">বকেয়া ফাইন / জরিমানা পরিশোধ</option>
                             </select>
                         </div>
                         
@@ -1305,7 +1419,6 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                             <input id="mPayUtr" placeholder="১২ সংখ্যার UTR বা ট্রানজ্যাকশন আইডি">
                         </div>
                         
-                        <!-- সদস্যের পেমেন্ট স্ক্রিনশট আপলোড -->
                         <div class="form-group" style="background:#fdfcf9; border:1px dashed var(--border); padding:10px; border-radius:10px;">
                             <label style="color:#7c2d12;">📸 পেমেন্টের স্ক্রিনশট যুক্ত করুন (ঐচ্ছিক কিন্তু বাঞ্ছনীয়):</label>
                             <input type="file" id="mPayReceiptFile" accept="image/*" onchange="handleReceiptUpload(event)">
@@ -1333,6 +1446,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                                 <th>বকেয়া সঞ্চয়</th>
                                 <th>ডিউ মাস</th>
                                 <th>বকেয়া সুদ</th>
+                                <th>বকেয়া ফাইন</th>
                                 <th>সরাসরি যোগাযোগ</th>
                             </tr>
                         </thead>
@@ -1386,7 +1500,31 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     </main>
 </div>
 
-<!-- MODALS -->
+<!-- FINE APPLICATION MODAL (৩ মাসের বেশি বকেয়ার উপর অ্যাডমিন ফাইন) -->
+<div id="fineModal" class="modal">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 style="color:#b91c1c;">⚠️ অতিরিক্ত বকেয়ার উপর ফাইন / চার্জ ধার্য</h3>
+            <button class="close-btn" onclick="closeModal('fineModal')">✕</button>
+        </div>
+        <input type="hidden" id="fineMemberId">
+        <div class="due-summary-box">
+            <p>সদস্য: <b id="fineMemberName"></b></p>
+            <p>বকেয়া মাস: <b id="fineMemberMonths" style="color:var(--danger);"></b></p>
+            <p>মোট বকেয়া সঞ্চয়: <b id="fineMemberSavingsDue" style="color:var(--danger);"></b></p>
+        </div>
+        <div class="form-group">
+            <label>ফাইনের কারণ / বিবরণ</label>
+            <input id="fineReason" value="৩ মাসের বেশি বকেয়া সঞ্চয় ও বিলম্ব চার্জ">
+        </div>
+        <div class="form-group">
+            <label>ফাইনের পরিমাণ (₹)</label>
+            <input id="fineAmount" type="number" min="1" placeholder="উদাঃ 100, 200 বা 500" required>
+        </div>
+        <button class="btn btn-danger full" onclick="submitLateFine()">⚖️ ফাইন অনুমোদন ও ধার্য করুন</button>
+    </div>
+</div>
+
 <div id="flashModal" class="modal">
     <div class="modal-box">
         <div class="modal-head">
@@ -1405,7 +1543,6 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     </div>
 </div>
 
-<!-- অ্যাডমিন ফ্ল্যাশ নোটিশ ম্যানেজ মোডাল -->
 <div id="manageFlashModal" class="modal">
     <div class="modal-box" style="max-width:650px;">
         <div class="modal-head">
@@ -1428,7 +1565,6 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     </div>
 </div>
 
-<!-- স্ক্রিনশট দেখার মোডাল -->
 <div id="imageViewerModal" class="modal">
     <div class="modal-box" style="text-align:center;">
         <div class="modal-head">
@@ -1555,7 +1691,6 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     </div>
 </div>
 
-<!-- ADMIN PAYMENT MODAL -->
 <div id="paymentModal" class="modal">
     <div class="modal-box">
         <div class="modal-head">
@@ -1571,6 +1706,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
             <div><span>📌 সঞ্চয় বকেয়া:</span> <b id="admBoxSavingsDue" style="color:var(--danger)">₹0</b></div>
             <div><span>📌 লোনের একত্র মোট বাকি আসল:</span> <b id="admBoxLoanPrincipal" style="color:var(--dark)">₹0</b></div>
             <div><span>📌 একত্র মোট বকেয়া সুদ:</span> <b id="admBoxInterestDue" style="color:var(--warning)">₹0</b></div>
+            <div><span>📌 বকেয়া জরিমানা/ফাইন:</span> <b id="admBoxFineDue" style="color:var(--danger)">₹0</b></div>
         </div>
 
         <div class="form-group">
@@ -1579,11 +1715,16 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                 <option value="SAVINGS">মাসিক সঞ্চয় জমা</option>
                 <option value="LOAN_INTEREST">একত্রে সকল লোনের সুদ পরিশোধ (Interest Pay)</option>
                 <option value="LOAN_PRINCIPAL">একত্রে লোনের আসল পরিশোধ (Loan Principal)</option>
+                <option value="FINE">ফাইন পরিশোধ (Fine Pay)</option>
             </select>
         </div>
         <div class="form-group">
             <label>পরিমাণ (₹)</label>
             <input id="payAmount" type="number" min="1" placeholder="টাকার পরিমাণ দিন">
+        </div>
+        <div class="form-group">
+            <label>তারিখ</label>
+            <input id="payDateAdmin" type="date">
         </div>
         <div class="form-group">
             <label>মাধ্যম</label>
@@ -1596,7 +1737,6 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
     </div>
 </div>
 
-<!-- EDIT PAYMENT MODAL -->
 <div id="editPaymentModal" class="modal">
     <div class="modal-box">
         <div class="modal-head">
@@ -1614,6 +1754,7 @@ th{ background:#fff7ed; color:#7c2d12; font-weight:700; }
                 <option value="SAVINGS">মাসিক সঞ্চয় জমা</option>
                 <option value="LOAN_INTEREST">লোনের সুদ পরিশোধ (Interest Pay)</option>
                 <option value="LOAN_PRINCIPAL">লোনের আসল পরিশোধ (Loan Pay)</option>
+                <option value="FINE">ফাইন পরিশোধ (Fine Pay)</option>
             </select>
         </div>
         <div class="form-group">
@@ -1672,7 +1813,8 @@ const defaultInitialState = {
     expenses: [],
     loanApplications: [],
     chats: [],
-    flashNotices: []
+    flashNotices: [],
+    fines: []
 };
 
 let db = JSON.parse(localStorage.getItem(DB_KEY)) || defaultInitialState;
@@ -1685,11 +1827,12 @@ if(!db.expenses) db.expenses = [];
 if(!db.loanApplications) db.loanApplications = [];
 if(!db.chats) db.chats = [];
 if(!db.flashNotices) db.flashNotices = [];
+if(!db.fines) db.fines = [];
 
 db.settings.firebaseUrl = CLOUD_FIREBASE_URL;
 
 let fbDb = null;
-let activeChatChannel = "GROUP"; // 'GROUP' or memberId
+let activeChatChannel = "GROUP";
 let uploadedReceiptBase64 = "";
 
 /* ================= WEB AUDIO API SOUND SYSTEM ================= */
@@ -1779,6 +1922,7 @@ function initFirebase(url){
                 if(!db.loanApplications) db.loanApplications = [];
                 if(!db.chats) db.chats = [];
                 if(!db.flashNotices) db.flashNotices = [];
+                if(!db.fines) db.fines = [];
 
                 localStorage.setItem(DB_KEY, JSON.stringify(db));
 
@@ -1801,7 +1945,6 @@ function initFirebase(url){
             }
         });
 
-        // সিগন্যালিং সিস্টেম: অ্যাডমিন কল শুরু বা শেষ করলে মেম্বারদের কাছে স্বয়ংক্রিয়ভাবে সংকেত যাবে
         fbDb.ref("samiti_live_call").on("value", (snap) => {
             const callData = snap.val();
             handleLiveCallSignal(callData);
@@ -1856,7 +1999,6 @@ function initPeerVideoCall(){
             if(stat) stat.textContent = "🟢 সংযুক্ত (Online)";
         });
 
-        // শুধুমাত্র অ্যাডমিনের কল আসলেই মেম্বার কল ধরতে পারবে (সদস্য নিজে ইচ্ছামত কল করতে পারবে না)
         peer.on('call', (call) => {
             const callerId = (call.peer || "").toLowerCase();
             const isAdminCall = callerId.includes("admin") || callerId.includes("jerox_admin");
@@ -1892,7 +2034,6 @@ function initPeerVideoCall(){
     }
 }
 
-// লাইভ সিগন্যাল হ্যান্ডলার: অ্যাডমিন কল করলে মেম্বার স্ক্রিন ওপেন হবে ও অটো কল রিসিভ হবে
 function handleLiveCallSignal(callData){
     if(!currentUser) return;
 
@@ -1935,7 +2076,6 @@ async function ensureLocalMediaStream(){
     }
 }
 
-// অ্যাডমিনের একক বোতামে সমস্ত সদস্যকে একসাথে কল করা
 function adminCallAllMembers(){
     if(currentUser.role !== "ADMIN"){
         toast("❌ শুধুমাত্র অ্যাডমিন কল শুরু করতে পারবেন!");
@@ -1952,7 +2092,6 @@ function adminCallAllMembers(){
         toast("📢 সকল সদস্যকে কল পাঠানো হচ্ছে...");
         activeCallsList = [];
 
-        // ফায়ারবেসে গ্লোবাল কল সিগন্যাল পাঠানো
         if(fbDb){
             fbDb.ref("samiti_live_call").set({
                 status: "ACTIVE",
@@ -2067,10 +2206,8 @@ function toggleCamera(){
     }
 }
 
-// অ্যাডমিন কল কাটলে সাথে সাথে সমস্ত সদস্যের লাইন কেটে যাবে
 function endVideoCall(manual = true){
     if(currentUser && currentUser.role === "ADMIN" && manual){
-        // অ্যাডমিন কাটলে ফায়ারবেসে বন্ধের নির্দেশ পাঠানো হয়
         if(fbDb){
             fbDb.ref("samiti_live_call").set({
                 status: "ENDED",
@@ -2149,6 +2286,11 @@ function broadcastMeetingRoomId(){
 
 window.addEventListener("DOMContentLoaded", () => {
     initFirebase(CLOUD_FIREBASE_URL);
+    // সেট ডিফল্ট মাস
+    const now = new Date();
+    const curMonthStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}`;
+    const bsMonthInput = document.getElementById("balanceSheetMonthInput");
+    if(bsMonthInput) bsMonthInput.value = curMonthStr;
 });
 
 function setLoginType(type){
@@ -2216,7 +2358,6 @@ function startApp(){
     document.getElementById("topUserName").textContent = currentUser.name;
     document.getElementById("roleLabel").textContent = currentUser.role === "ADMIN" ? "Admin Panel" : "Member Portal";
 
-    // অ্যাডমিন ও মেম্বার ভিডিও বোতাম কন্ট্রোল নিয়ন্ত্রণ
     const adminCallWrap = document.getElementById("adminCallControlWrap");
     const memberCallWrap = document.getElementById("memberCallControlWrap");
     if(adminCallWrap && memberCallWrap){
@@ -2270,6 +2411,9 @@ function showPage(id, btn){
 
     const titles = {
         dashboard: "📊 ড্যাশবোর্ড",
+        balanceSheetPage: "📑 মাসিক ব্যালেন্স শিট",
+        adminStatementPage: "📜 মেম্বার স্টেটমেন্ট (Admin)",
+        memberStatementPage: "📄 আমার স্টেটমেন্ট",
         videoPage: "📹 ভিডিও মিটিং ও কল",
         chatPage: "💬 চ্যাট ও নোটিশ",
         members: "👥 মেম্বার খাতা ও পাসওয়ার্ড",
@@ -2299,6 +2443,10 @@ function showPage(id, btn){
 
     if(id === "videoPage"){
         ensureLocalMediaStream().catch(() => {});
+    }
+
+    if(id === "memberLoanApply"){
+        renderLoanAvailableBalance();
     }
 
     renderAll();
@@ -2603,6 +2751,18 @@ function memberDueMonths(member){
     return Math.ceil(dueAmt / monthlyRate);
 }
 
+function memberFineDue(memberId){
+    const totalAssessedFine = (db.fines || [])
+        .filter(f => f.memberId === memberId)
+        .reduce((sum, f) => sum + Number(f.amount || 0), 0);
+
+    const totalPaidFine = db.payments
+        .filter(p => p.memberId === memberId && p.type === "FINE" && p.status === "APPROVED")
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+    return Math.max(0, totalAssessedFine - totalPaidFine);
+}
+
 function loanPrincipalRemaining(loan){
     const paid = db.payments
         .filter(p => p.loanId === loan.id && (p.type === "LOAN" || p.type === "LOAN_PRINCIPAL") && p.status === "APPROVED")
@@ -2659,13 +2819,17 @@ function totalSocietyCash(){
         .filter(p => (p.type === "LOAN" || p.type === "LOAN_PRINCIPAL" || p.type === "LOAN_INTEREST") && p.status === "APPROVED")
         .reduce((s, p) => s + Number(p.amount), 0);
 
+    const totalFines = db.payments
+        .filter(p => p.type === "FINE" && p.status === "APPROVED")
+        .reduce((s, p) => s + Number(p.amount), 0);
+
     const totalLoanDisbursed = db.loans
         .filter(l => l.status === "APPROVED")
         .reduce((s, l) => s + Number(l.principal), 0);
 
     const totalExpenses = db.expenses.reduce((s, e) => s + Number(e.amount), 0);
 
-    return (totalSavings + totalLoanRepayments) - (totalLoanDisbursed + totalExpenses);
+    return (totalSavings + totalLoanRepayments + totalFines) - (totalLoanDisbursed + totalExpenses);
 }
 
 function requireActionAuth(callbackAction){
@@ -2678,7 +2842,273 @@ function requireActionAuth(callbackAction){
     }
 }
 
-/* ================= RENDERING ================= */
+/* ================= FINE / PENALTY LOGIC ================= */
+function openFineModal(memberId){
+    const m = db.members.find(x => x.id === memberId);
+    if(!m) return;
+    const due = memberSavingsDue(m);
+    const months = memberDueMonths(m);
+
+    document.getElementById("fineMemberId").value = m.id;
+    document.getElementById("fineMemberName").textContent = `${m.name} (${m.id})`;
+    document.getElementById("fineMemberMonths").textContent = `${months} মাস`;
+    document.getElementById("fineMemberSavingsDue").textContent = money(due);
+    
+    // ডিফল্ট ৩ মাসের বেশি বকেয়ার উপর ৫% বা নির্দিষ্ট ২০০ টাকা ধার্য হিসেব
+    const suggestedFine = Math.max(100, Math.round(due * 0.05));
+    document.getElementById("fineAmount").value = suggestedFine;
+
+    document.getElementById("fineModal").classList.add("show");
+}
+
+function submitLateFine(){
+    const memberId = document.getElementById("fineMemberId").value;
+    const amount = Number(document.getElementById("fineAmount").value);
+    const reason = document.getElementById("fineReason").value.trim();
+
+    if(!amount || amount <= 0){
+        toast("সঠিক ফাইনের পরিমাণ লিখুন!");
+        return;
+    }
+
+    if(!db.fines) db.fines = [];
+    const fineObj = {
+        id: "FINE-" + Date.now(),
+        memberId: memberId,
+        amount: amount,
+        reason: reason || "৩ মাসের অধিক বকেয়া ফাইন",
+        date: new Date().toISOString()
+    };
+
+    db.fines.push(fineObj);
+    saveDB();
+    closeModal("fineModal");
+    renderAll();
+    toast("সদস্যের উপর বকেয়া ফাইন সফলভাবে ধার্য করা হয়েছে!");
+}
+
+/* ================= MONTHLY BALANCE SHEET ENGINE ================= */
+function renderMonthlyBalanceSheet(){
+    const monthVal = document.getElementById("balanceSheetMonthInput").value;
+    if(!monthVal) return;
+
+    const [year, month] = monthVal.split("-").map(Number);
+    const dateObj = new Date(year, month - 1);
+    const monthName = dateObj.toLocaleDateString("bn-IN", { month: 'long', year: 'numeric' });
+
+    document.getElementById("bsMonthTitle").textContent = `মাসিক ব্যালেন্স শিট: ${monthName}`;
+    document.getElementById("bsMonthMeta").textContent = `সময়কাল: ০১/${String(month).padStart(2,'0')}/${year} হইতে শেষ তারিখ`;
+
+    // ফিল্টার পেমেন্ট যা অনুমোদিত এবং ওই মাসের অন্তর্ভুক্ত
+    const approvedPayments = (db.payments || []).filter(p => {
+        if(p.status !== "APPROVED") return false;
+        const d = new Date(p.date);
+        return d.getFullYear() === year && (d.getMonth() + 1) === month;
+    });
+
+    let totalSavings = 0;
+    let totalPrincipal = 0;
+    let totalInterest = 0;
+    let totalFine = 0;
+
+    const tbody = document.getElementById("balanceSheetTableBody");
+    tbody.innerHTML = "";
+
+    const activeMembers = db.members.filter(m => !m.isSettled);
+
+    activeMembers.forEach(m => {
+        const memberMonthPayments = approvedPayments.filter(p => p.memberId === m.id);
+
+        let mSavings = 0;
+        let mPrincipal = 0;
+        let mInterest = 0;
+        let mFine = 0;
+        let methods = new Set();
+
+        memberMonthPayments.forEach(p => {
+            if(p.type === "SAVINGS"){
+                mSavings += Number(p.amount || 0);
+            } else if(p.type === "LOAN_PRINCIPAL" || p.type === "LOAN"){
+                mPrincipal += Number(p.principalAmount !== undefined ? p.principalAmount : p.amount);
+            } else if(p.type === "LOAN_INTEREST"){
+                mInterest += Number(p.interestAmount !== undefined ? p.interestAmount : p.amount);
+            } else if(p.type === "FINE"){
+                mFine += Number(p.amount || 0);
+            }
+            if(p.method) methods.add(p.method);
+        });
+
+        const mTotal = mSavings + mPrincipal + mInterest + mFine;
+
+        totalSavings += mSavings;
+        totalPrincipal += mPrincipal;
+        totalInterest += mInterest;
+        totalFine += mFine;
+
+        const methodsStr = methods.size > 0 ? Array.from(methods).join(", ") : "-";
+
+        tbody.innerHTML += `
+            <tr style="${mTotal > 0 ? 'background:#f0fdf4;' : ''}">
+                <td><code>${m.id}</code></td>
+                <td><b>${m.name}</b></td>
+                <td style="color:#166534; font-weight:bold;">${money(mSavings)}</td>
+                <td style="color:#1d4ed8; font-weight:bold;">${money(mPrincipal)}</td>
+                <td style="color:#b45309; font-weight:bold;">${money(mInterest)}</td>
+                <td style="color:#7e22ce; font-weight:bold;">${money(mFine)}</td>
+                <td style="color:var(--primary); font-weight:800; font-size:15px;">${money(mTotal)}</td>
+                <td><small>${methodsStr}</small></td>
+            </tr>
+        `;
+    });
+
+    const grandTotal = totalSavings + totalPrincipal + totalInterest + totalFine;
+
+    document.getElementById("bsTotalSavings").textContent = money(totalSavings);
+    document.getElementById("bsTotalPrincipal").textContent = money(totalPrincipal);
+    document.getElementById("bsTotalInterest").textContent = money(totalInterest);
+    document.getElementById("bsTotalFine").textContent = money(totalFine);
+    document.getElementById("bsGrandTotal").textContent = money(grandTotal);
+
+    if(activeMembers.length === 0){
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;">কোনো সদস্য পাওয়া যায়নি।</td></tr>`;
+    }
+}
+
+/* ================= MEMBER ACCOUNT STATEMENT ENGINE ================= */
+function generateStatementHTML(memberId){
+    const m = db.members.find(x => x.id === memberId);
+    if(!m) return "<p>সদস্য পাওয়া যায়নি।</p>";
+
+    const savings = memberSavings(m.id);
+    const savingsDue = memberSavingsDue(m);
+    const dueMonths = memberDueMonths(m);
+    const pRemaining = memberTotalLoanPrincipalRemaining(m.id);
+    const iRemaining = memberTotalLoanInterestRemaining(m.id);
+    const fRemaining = memberFineDue(m.id);
+
+    const mPayments = (db.payments || []).filter(p => p.memberId === m.id && p.status === "APPROVED").sort((a,b)=> new Date(a.date) - new Date(b.date));
+    const mLoans = (db.loans || []).filter(l => l.memberId === m.id);
+    const mFines = (db.fines || []).filter(f => f.memberId === m.id);
+
+    let rowsHtml = "";
+    let runningSavings = 0;
+
+    mPayments.forEach((p, idx) => {
+        if(p.type === "SAVINGS") runningSavings += Number(p.amount);
+        const pDate = new Date(p.date).toLocaleDateString("bn-IN");
+        rowsHtml += `
+            <tr>
+                <td>${idx + 1}</td>
+                <td>${pDate}</td>
+                <td><span class="badge ${p.type==='SAVINGS'?'badge-blue':p.type==='FINE'?'badge-purple':'badge-warning'}">${formatPaymentType(p.type)}</span></td>
+                <td style="font-weight:bold;">${money(p.amount)}</td>
+                <td>${p.method || 'Cash'} ${p.utr ? `(${p.utr})` : ''}</td>
+                <td>${p.type === 'SAVINGS' ? money(runningSavings) : '-'}</td>
+            </tr>
+        `;
+    });
+
+    if(mPayments.length === 0){
+        rowsHtml = `<tr><td colspan="6" style="text-align:center;padding:15px;">এখনো কোনো অনুমোদিত লেনদেন নেই।</td></tr>`;
+    }
+
+    return `
+        <div id="printableStatement" style="padding:15px; font-family:'Segoe UI','Noto Sans Bengali',sans-serif;">
+            <div style="border-bottom:2px solid #ea580c; padding-bottom:12px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h2 style="color:#7c2d12; margin:0;">🕉️ জেরক্স সমিতি</h2>
+                    <p style="margin:2px 0; color:var(--muted); font-size:13px;">ডিজিটাল খতিয়ান ও পূর্ণাঙ্গ সদস্য অ্যাকাউন্ট বিবরণী</p>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:12px; color:var(--muted);">তারিখ: ${new Date().toLocaleDateString("bn-IN")}</div>
+                    <span class="badge badge-success">সক্রিয় সদস্য</span>
+                </div>
+            </div>
+
+            <div style="background:#fff7ed; padding:12px 16px; border-radius:12px; border:1px solid #fed7aa; margin-bottom:16px;">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:14px;">
+                    <div><b>সদস্যের নাম:</b> ${m.name}</div>
+                    <div><b>সদস্য কোড:</b> ${m.id}</div>
+                    <div><b>মোবাইল নম্বর:</b> ${m.mobile}</div>
+                    <div><b>যোগদানের তারিখ:</b> ${m.joiningDate}</div>
+                </div>
+            </div>
+
+            <!-- সার্বিক অর্থনৈতিক স্থিতি -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:20px;">
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:10px;">
+                    <small style="color:#166534; font-weight:bold;">মোট জমা সঞ্চয়</small>
+                    <div style="font-size:18px; font-weight:800; color:#166534;">${money(savings)}</div>
+                </div>
+                <div style="background:#fef2f2; border:1px solid #fecaca; padding:10px; border-radius:10px;">
+                    <small style="color:#991b1b; font-weight:bold;">বকেয়া সঞ্চয় (Due)</small>
+                    <div style="font-size:18px; font-weight:800; color:#991b1b;">${money(savingsDue)} (${dueMonths} মাস)</div>
+                </div>
+                <div style="background:#fffbeb; border:1px solid #fde68a; padding:10px; border-radius:10px;">
+                    <small style="color:#92400e; font-weight:bold;">বাকি লোন (আসল)</small>
+                    <div style="font-size:18px; font-weight:800; color:#92400e;">${money(pRemaining)}</div>
+                </div>
+                <div style="background:#fff7ed; border:1px solid #fed7aa; padding:10px; border-radius:10px;">
+                    <small style="color:#c2410c; font-weight:bold;">বকেয়া লোন সুদ</small>
+                    <div style="font-size:18px; font-weight:800; color:#c2410c;">${money(iRemaining)}</div>
+                </div>
+                <div style="background:#faf5ff; border:1px solid #e9d5ff; padding:10px; border-radius:10px;">
+                    <small style="color:#7e22ce; font-weight:bold;">বকেয়া জরিমানা (Fine)</small>
+                    <div style="font-size:18px; font-weight:800; color:#7e22ce;">${money(fRemaining)}</div>
+                </div>
+            </div>
+
+            <h4 style="color:#7c2d12; margin-bottom:8px;">💳 সদস্যের সকল অনুমোদিত পেমেন্ট ও জমার বিবরণ</h4>
+            <div class="table-wrap" style="margin-bottom:20px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>তারিখ</th>
+                            <th>খাত (Type)</th>
+                            <th>পরিমাণ (₹)</th>
+                            <th>মাধ্যম / রেফারেন্স</th>
+                            <th>মোট সঞ্চয় স্থিতি</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            </div>
+
+            <div style="margin-top:25px; padding-top:10px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:flex-end;">
+                <div>
+                    <small style="color:var(--muted);">* এটি জেরক্স সমিতি কর্তৃক তৈরি অফিশিয়াল ডিজিটাল স্টেটমেন্ট।</small>
+                </div>
+                <div style="text-align:center;">
+                    <div style="border-top:1px solid #431407; width:160px; padding-top:4px; font-weight:bold; font-size:13px;">অ্যাডমিনের স্বাক্ষর</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderAdminSelectedStatement(){
+    const select = document.getElementById("adminStatementMemberSelect");
+    const memberId = select.value;
+    const container = document.getElementById("adminStatementContent");
+    if(!memberId){
+        container.innerHTML = `<p style="text-align:center; color:var(--muted); padding:30px;">অনুগ্রহ করে উপর থেকে একজন সদস্য নির্বাচন করুন তার পূর্ণ খতিয়ান দেখতে।</p>`;
+        return;
+    }
+    container.innerHTML = generateStatementHTML(memberId);
+}
+
+function renderMemberPersonalStatement(){
+    const container = document.getElementById("memberPersonalStatementContent");
+    if(!container || !currentUser) return;
+    container.innerHTML = generateStatementHTML(currentUser.id);
+}
+
+function printElement(elementId){
+    window.print();
+}
+
+/* ================= MAIN RENDERING DISPATCHER ================= */
 function renderAll(){
     if(!currentUser) return;
 
@@ -2692,14 +3122,28 @@ function renderAll(){
         renderPaymentsTable();
         renderReportsTable();
         loadSettings();
+        populateAdminStatementSelect();
     } else {
         renderMemberDashboard();
         renderMemberLoansList();
         renderAllMemberDues();
         renderMemberHistory();
         renderMemberPaymentPortal();
+        renderMemberPersonalStatement();
     }
+    renderMonthlyBalanceSheet();
     renderChatInterface();
+    renderLoanAvailableBalance();
+}
+
+function populateAdminStatementSelect(){
+    const select = document.getElementById("adminStatementMemberSelect");
+    if(!select) return;
+    const currentVal = select.value;
+    select.innerHTML = `<option value="">সদস্য নির্বাচন করুন...</option>`;
+    db.members.forEach(m => {
+        select.innerHTML += `<option value="${m.id}" ${m.id===currentVal?'selected':''}>${m.name} (${m.id})</option>`;
+    });
 }
 
 function renderAdminDashboard(){
@@ -2729,22 +3173,29 @@ function renderAdminDashboard(){
         const due = memberSavingsDue(m);
         const dueMonths = memberDueMonths(m);
         const intDue = memberTotalLoanInterestRemaining(m.id);
+        const fineDue = memberFineDue(m.id);
 
         totalDue += due;
         totalIntDue += intDue;
 
-        if(due > 0 || intDue > 0){
-            const msg = encodeURIComponent(`নমস্কার ${m.name} মশায়, জেরক্স সমিতিতে আপনার বকেয়া সঞ্চয় ${money(due)} (${dueMonths} মাস) এবং বকেয়া লোন সুদ ${money(intDue)}। অনুগ্রহ করে অতিসত্বর পরিশোধ করুন।`);
+        if(due > 0 || intDue > 0 || fineDue > 0){
+            const isSevereLate = dueMonths >= 3;
+            const msg = encodeURIComponent(`নমস্কার ${m.name} মশায়, জেরক্স সমিতিতে আপনার বকেয়া সঞ্চয় ${money(due)} (${dueMonths} মাস), বকেয়া লোন সুদ ${money(intDue)} এবং বকেয়া ফাইন ${money(fineDue)}। অনুগ্রহ করে অতিসত্বর পরিশোধ করুন।`);
+            
             summaryTbody.innerHTML += `
-                <tr style="background:#fff7ed;">
-                    <td><b>${m.name}</b></td>
+                <tr style="background:${isSevereLate ? '#fef2f2' : '#fff7ed'};">
+                    <td><b>${m.name}</b> ${isSevereLate ? '<br><span class="badge badge-danger">৩+ মাসের বকেয়া</span>' : ''}</td>
                     <td>${m.mobile}</td>
                     <td style="color:var(--danger);font-weight:bold;">${money(due)}</td>
-                    <td><span class="badge badge-danger">${dueMonths} মাস ডিউ</span></td>
+                    <td><span class="badge ${isSevereLate ? 'badge-danger' : 'badge-warning'}">${dueMonths} মাস ডিউ</span></td>
                     <td style="color:var(--warning);font-weight:bold;">${money(intDue)}</td>
+                    <td style="color:var(--danger);font-weight:bold;">${money(fineDue)}</td>
                     <td>
-                        <a class="call-btn" href="tel:${m.mobile}">📞 কল</a>
-                        <a class="wa-btn" href="https://wa.me/91${m.mobile}?text=${msg}" target="_blank">💬 WhatsApp</a>
+                        <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                            <a class="call-btn" href="tel:${m.mobile}">📞 কল</a>
+                            <a class="wa-btn" href="https://wa.me/91${m.mobile}?text=${msg}" target="_blank">💬 WA</a>
+                            ${isSevereLate ? `<button class="btn btn-danger btn-sm" onclick="openFineModal('${m.id}')">⚖️ ফাইন লাগান</button>` : ''}
+                        </div>
                     </td>
                 </tr>
             `;
@@ -2752,7 +3203,7 @@ function renderAdminDashboard(){
     });
 
     if(summaryTbody.innerHTML === ""){
-        summaryTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:green;padding:20px;">সকল সদস্যের হিসাব পরিশোধিত! কারোর কোনো বকেয়া নেই 🎉</td></tr>`;
+        summaryTbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:green;padding:20px;">সকল সদস্যের হিসাব পরিশোধিত! কারোর কোনো বকেয়া নেই 🎉</td></tr>`;
     }
 
     document.getElementById("statDue").textContent = money(totalDue);
@@ -2882,6 +3333,7 @@ function formatPaymentType(type){
     if(type === 'SAVINGS') return 'মাসিক সঞ্চয়';
     if(type === 'LOAN_INTEREST') return 'লোনের সুদ পরিশোধ';
     if(type === 'LOAN_PRINCIPAL' || type === 'LOAN') return 'লোনের আসল পরিশোধ';
+    if(type === 'FINE') return 'বকেয়া ফাইন / জরিমানা';
     return type;
 }
 
@@ -2892,6 +3344,7 @@ function renderPaymentsTable(){
     db.payments.slice().reverse().forEach(p => {
         const m = db.members.find(x => x.id === p.memberId);
         const isSavings = p.type === 'SAVINGS';
+        const isFine = p.type === 'FINE';
         const receiptHtml = p.receiptImage ? 
             `<button class="btn btn-secondary btn-sm" onclick="viewReceiptImage('${p.id}')">🖼️ দেখুন</button>` : 
             `<span style="color:var(--muted); font-size:12px;">নেই</span>`;
@@ -2900,7 +3353,7 @@ function renderPaymentsTable(){
             <tr>
                 <td>${new Date(p.date).toLocaleDateString("bn-IN")}</td>
                 <td>${m ? m.name : '-'}</td>
-                <td><span class="badge ${isSavings?'badge-blue':'badge-warning'}">${formatPaymentType(p.type)}</span></td>
+                <td><span class="badge ${isSavings?'badge-blue':isFine?'badge-purple':'badge-warning'}">${formatPaymentType(p.type)}</span></td>
                 <td style="font-weight:bold;">${money(p.amount)}</td>
                 <td>${p.method || 'Cash'} ${p.utr ? `<br><small style="color:gray;">UTR: ${p.utr}</small>` : ''}</td>
                 <td>${receiptHtml}</td>
@@ -2933,7 +3386,7 @@ function renderPendingTable(){
             <tr>
                 <td>${new Date(p.date).toLocaleDateString("bn-IN")}</td>
                 <td><b>${m ? m.name : '-'}</b></td>
-                <td><span class="badge badge-warning">${formatPaymentType(p.type)}</span></td>
+                <td><span class="badge ${p.type==='FINE'?'badge-purple':'badge-warning'}">${formatPaymentType(p.type)}</span></td>
                 <td style="font-weight:bold; color:#166534;">${money(p.amount)}</td>
                 <td>${p.method} ${p.utr ? `<br><b>UTR:</b> ${p.utr}` : ''}</td>
                 <td>${receiptHtml}</td>
@@ -2975,6 +3428,7 @@ function renderReportsTable(){
     });
 }
 
+/* ================= MEMBER PORTAL VIEWS ================= */
 function renderMemberDashboard(){
     const m = db.members.find(x => x.id === currentUser.id);
     if(!m) return;
@@ -2984,6 +3438,7 @@ function renderMemberDashboard(){
     const dueMonths = memberDueMonths(m);
     const pRemaining = memberTotalLoanPrincipalRemaining(m.id);
     const iRemaining = memberTotalLoanInterestRemaining(m.id);
+    const fRemaining = memberFineDue(m.id);
 
     document.getElementById("mySavings").textContent = money(savings);
     document.getElementById("myDue").textContent = money(due);
@@ -2991,10 +3446,10 @@ function renderMemberDashboard(){
     document.getElementById("myLoanInterest").textContent = money(iRemaining);
 
     const alertBox = document.getElementById("memberSevereAlert");
-    if(due > 0 || iRemaining > 0){
+    if(due > 0 || iRemaining > 0 || fRemaining > 0){
         alertBox.classList.remove("hidden");
         document.getElementById("severeAlertDetails").innerHTML = `
-            আপনার বর্তমানে <b>${money(due)}</b> টাকার সঞ্চয় (${dueMonths} মাসের কিস্তি) বকেয়া রয়েছে ${iRemaining > 0 ? `এবং লোনের সুদ বাকি <b>${money(iRemaining)}</b> টাকা` : ''}।
+            আপনার বর্তমানে <b>${money(due)}</b> টাকার সঞ্চয় (${dueMonths} মাসের কিস্তি) বকেয়া রয়েছে ${iRemaining > 0 ? `এবং লোনের সুদ বাকি <b>${money(iRemaining)}</b> টাকা` : ''} ${fRemaining > 0 ? `এবং জরিমানা ধার্য <b>${money(fRemaining)}</b> টাকা` : ''}।
         `;
         const adminMobile = db.settings.adminMobile || (db.admin ? db.admin.mobile : "");
         document.getElementById("alertCallAdmin").href = `tel:${adminMobile}`;
@@ -3010,14 +3465,15 @@ function renderMemberDashboard(){
         <p>প্রারম্ভিক শেয়ার মূলধন: <b>${money(m.entryDeposit || 20000)}</b></p>
         <p>মাসিক সঞ্চয় লক্ষ্যমাত্রা: <b>${money(db.settings.monthlyDeposit)}</b> প্রতি মাস</p>
         <p>মোট বকেয়া মাস: <b style="color:${dueMonths>0?'var(--danger)':'inherit'}">${dueMonths} মাস</b></p>
+        ${fRemaining > 0 ? `<p style="color:var(--danger);"><b>বকেয়া জরিমানা/চার্জ:</b> ${money(fRemaining)}</p>` : ''}
     `;
 
     document.getElementById("mBoxSavingsDue").textContent = money(due);
     document.getElementById("mBoxLoanPrincipal").textContent = money(pRemaining);
     document.getElementById("mBoxInterestDue").textContent = money(iRemaining);
+    document.getElementById("mBoxFineDue").textContent = money(fRemaining);
 }
 
-/* ================= DYNAMIC QR CODE & PAYMENT SELECTION ================= */
 function renderMemberPaymentPortal(){
     document.getElementById("portalUpiIdText").textContent = db.settings.upiId || "সেট করা নেই";
     onMemberPaymentTypeChange();
@@ -3036,6 +3492,7 @@ function onMemberPaymentTypeChange(){
     const loans = db.loans.filter(l => l.memberId === currentUser.id && l.status === "APPROVED");
     const totalPrincipal = memberTotalLoanPrincipalRemaining(currentUser.id);
     const totalInterest = memberTotalLoanInterestRemaining(currentUser.id);
+    const fineDue = memberFineDue(currentUser.id);
 
     if(type === "SAVINGS"){
         loanDiv.style.display = "none";
@@ -3070,6 +3527,12 @@ function onMemberPaymentTypeChange(){
         }
         autoNotice.style.display = "block";
         autoNotice.textContent = "✨ আপনার সকল লোনের মোট বাকি আসল একত্রে স্বয়ংক্রিয়ভাবে দেখানো হয়েছে। আপনি চাইলে আংশিক বা পুরোটা একবারে দিতে পারেন।";
+    } else if(type === "FINE"){
+        loanDiv.style.display = "none";
+        amountInput.value = fineDue;
+        amountInput.readOnly = true;
+        autoNotice.style.display = "block";
+        autoNotice.textContent = "✨ আপনার বকেয়া জরিমানা/ফাইন অনুযায়ী টাকার পরিমাণ স্বয়ংক্রিয়ভাবে ধার্য করা হয়েছে।";
     }
 
     updateMemberDynamicQr();
@@ -3113,7 +3576,6 @@ function updateMemberDynamicQr(){
     }
 }
 
-/* হ্যান্ডেল রিসিপ্ট আপলোড (ইমেজ কম্প্রেশন সহ) */
 function handleReceiptUpload(e){
     const file = e.target.files[0];
     if(!file) return;
@@ -3172,6 +3634,7 @@ function renderAllMemberDues(){
         const due = memberSavingsDue(m);
         const dueMonths = memberDueMonths(m);
         const intDue = memberTotalLoanInterestRemaining(m.id);
+        const fineDue = memberFineDue(m.id);
 
         tbody.innerHTML += `
             <tr>
@@ -3180,6 +3643,7 @@ function renderAllMemberDues(){
                 <td style="color:${due>0?'var(--danger)':'var(--success)'};font-weight:bold;">${money(due)}</td>
                 <td><span class="badge ${dueMonths>0?'badge-danger':'badge-success'}">${dueMonths} মাস</span></td>
                 <td style="color:var(--warning);font-weight:bold;">${money(intDue)}</td>
+                <td style="color:var(--danger);font-weight:bold;">${money(fineDue)}</td>
                 <td><a class="call-btn" href="tel:${m.mobile}">📞 কল দিন</a></td>
             </tr>
         `;
@@ -3241,7 +3705,14 @@ function renderMemberLoansList(){
 }
 
 /* ================= LOAN APPLICATION ================= */
+function renderLoanAvailableBalance(){
+    const el = document.getElementById("loanAvailableBalance");
+    if(!el) return;
+    el.textContent = money(Math.max(0, totalSocietyCash()));
+}
+
 function submitLoanApplication(){
+    renderLoanAvailableBalance();
     const amount = Number(document.getElementById("applyLoanAmount").value);
     const reason = document.getElementById("applyLoanReason").value.trim();
 
@@ -3438,7 +3909,8 @@ function openSettleModal(id){
 
     const pRemaining = memberTotalLoanPrincipalRemaining(m.id);
     const iRemaining = memberTotalLoanInterestRemaining(m.id);
-    const totalLoanObligation = pRemaining + iRemaining;
+    const fRemaining = memberFineDue(m.id);
+    const totalLoanObligation = pRemaining + iRemaining + fRemaining;
 
     const netFinalPayable = (mTotalSavings + memberProfitShare) - totalLoanObligation;
 
@@ -3453,6 +3925,7 @@ function openSettleModal(id){
             <hr style="margin:10px 0;">
             <p>বাকি আসল ঋণ: <b style="color:var(--danger)">${money(pRemaining)}</b></p>
             <p>বাকি ঋণের সুদ: <b style="color:var(--danger)">${money(iRemaining)}</b></p>
+            <p>বকেয়া জরিমানা/ফাইন: <b style="color:var(--danger)">${money(fRemaining)}</b></p>
             <hr style="margin:10px 0;">
             <p style="font-size:16px;">
                 ${netFinalPayable >= 0 ? 
@@ -3571,9 +4044,10 @@ function saveLoan(){
 }
 
 /* ================= PAYMENTS ENGINE ================= */
-function distributeConsolidatedLoanPayment(memberId, totalAmount, type, method, utr, status = "APPROVED", receiptImage = ""){
+function distributeConsolidatedLoanPayment(memberId, totalAmount, type, method, utr, status = "APPROVED", receiptImage = "", paymentDate = null){
     const memberLoans = db.loans.filter(l => l.memberId === memberId && l.status === "APPROVED");
     let remainingAmount = totalAmount;
+    const finalDate = paymentDate ? new Date(paymentDate).toISOString() : new Date().toISOString();
 
     memberLoans.forEach((loan, index) => {
         if(remainingAmount <= 0) return;
@@ -3608,7 +4082,7 @@ function distributeConsolidatedLoanPayment(memberId, totalAmount, type, method, 
                 utr: utr,
                 receiptImage: receiptImage || "",
                 status: status,
-                date: new Date().toISOString()
+                date: finalDate
             });
             remainingAmount -= portion;
         }
@@ -3627,7 +4101,7 @@ function distributeConsolidatedLoanPayment(memberId, totalAmount, type, method, 
             utr: utr,
             receiptImage: receiptImage || "",
             status: status,
-            date: new Date().toISOString()
+            date: finalDate
         });
     }
 }
@@ -3640,6 +4114,7 @@ function openPaymentModal(){
         select.innerHTML += `<option value="${m.id}">${m.name} (${m.id})</option>`;
     });
     document.getElementById("payAmount").value = "";
+    document.getElementById("payDateAdmin").value = new Date().toISOString().slice(0, 10);
     onAdminSelectPayMember();
     document.getElementById("paymentModal").classList.add("show");
 }
@@ -3652,10 +4127,12 @@ function onAdminSelectPayMember(){
     const due = memberSavingsDue(m);
     const pRemaining = memberTotalLoanPrincipalRemaining(m.id);
     const iRemaining = memberTotalLoanInterestRemaining(m.id);
+    const fRemaining = memberFineDue(m.id);
 
     document.getElementById("admBoxSavingsDue").textContent = money(due);
     document.getElementById("admBoxLoanPrincipal").textContent = money(pRemaining);
     document.getElementById("admBoxInterestDue").textContent = money(iRemaining);
+    document.getElementById("admBoxFineDue").textContent = money(fRemaining);
 
     toggleAdminLoanField();
 }
@@ -3672,6 +4149,8 @@ function toggleAdminLoanField(){
         document.getElementById("payAmount").value = memberTotalLoanInterestRemaining(m.id);
     } else if(type === "LOAN_PRINCIPAL"){
         document.getElementById("payAmount").value = memberTotalLoanPrincipalRemaining(m.id);
+    } else if(type === "FINE"){
+        document.getElementById("payAmount").value = memberFineDue(m.id);
     }
 }
 
@@ -3680,6 +4159,7 @@ function saveAdminPayment(){
     const type = document.getElementById("payTypeSelect").value;
     const amount = Number(document.getElementById("payAmount").value);
     const method = document.getElementById("payMethod").value;
+    const payDate = document.getElementById("payDateAdmin").value || new Date().toISOString().slice(0, 10);
 
     if(!amount || amount <= 0) {
         toast("সঠিক টাকার পরিমাণ দিন!");
@@ -3692,7 +4172,7 @@ function saveAdminPayment(){
         return;
     }
 
-    if(type === "SAVINGS"){
+    if(type === "SAVINGS" || type === "FINE"){
         db.payments.push({
             id: "PAY-" + Date.now(),
             memberId,
@@ -3704,10 +4184,10 @@ function saveAdminPayment(){
             method,
             receiptImage: "",
             status: "APPROVED",
-            date: new Date().toISOString()
+            date: new Date(payDate).toISOString()
         });
     } else {
-        distributeConsolidatedLoanPayment(memberId, amount, type, method, "", "APPROVED", "");
+        distributeConsolidatedLoanPayment(memberId, amount, type, method, "", "APPROVED", "", payDate);
     }
 
     saveDB();
@@ -3716,7 +4196,6 @@ function saveAdminPayment(){
     toast("পেমেন্ট সফলভাবে জমা ও সমন্বয় হয়েছে!");
 }
 
-/* --- পেমেন্ট এডিট ও ডিলিট অপশন --- */
 function openEditPaymentModal(paymentId){
     const p = db.payments.find(x => x.id === paymentId);
     if(!p) return;
@@ -3805,7 +4284,7 @@ function submitMemberPayment(){
         id: "PAY-" + Date.now(),
         memberId: currentUser.id,
         type,
-        loanId: "CONSOLIDATED",
+        loanId: (type === "LOAN_INTEREST" || type === "LOAN_PRINCIPAL") ? "CONSOLIDATED" : null,
         amount,
         principalAmount: type === "LOAN_PRINCIPAL" ? amount : 0,
         interestAmount: type === "LOAN_INTEREST" ? amount : 0,
@@ -3831,14 +4310,15 @@ function approvePayment(id){
     if(p){
         if(p.loanId === "CONSOLIDATED" && (p.type === "LOAN_INTEREST" || p.type === "LOAN_PRINCIPAL")){
             const receiptImg = p.receiptImage || "";
+            const originalDate = p.date;
             db.payments = db.payments.filter(item => item.id !== id);
-            distributeConsolidatedLoanPayment(p.memberId, p.amount, p.type, p.method, p.utr, "APPROVED", receiptImg);
+            distributeConsolidatedLoanPayment(p.memberId, p.amount, p.type, p.method, p.utr, "APPROVED", receiptImg, originalDate);
         } else {
             p.status = "APPROVED";
         }
         saveDB();
         renderAll();
-        toast("পেমেন্ট অনুমোদন সফল! সংশ্লিষ্ট সমস্ত লোন ডিউ ও সুদ স্বয়ংক্রিয়ভাবে আপডেট হয়েছে।");
+        toast("পেমেন্ট অনুমোদন সফল! সংশ্লিষ্ট হিসাব স্বয়ংক্রিয়ভাবে আপডেট হয়েছে।");
     }
 }
 
@@ -3933,6 +4413,7 @@ function resetAllTransactionsData(){
         db.loans = [];
         db.expenses = [];
         db.loanApplications = [];
+        db.fines = [];
 
         db.members.forEach(m => {
             db.payments.push({
